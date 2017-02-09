@@ -50,7 +50,7 @@ use JSON qw(decode_json encode_json);
 
 
 
-my $version = "0.0.30";
+my $version = "0.0.40";
 
 
 
@@ -78,6 +78,7 @@ sub LGTV_WebOS_GetCurrentChannel($);
 sub LGTV_WebOS_GetForgroundAppInfo($);
 sub LGTV_WebOS_GetAudioStatus($);
 sub LGTV_WebOS_TimerStatusRequest($);
+sub LGTV_WebOS_GetExternalInputList($);
 
 
 
@@ -92,16 +93,62 @@ my %lgCommands = (
             "getChannelProgramInfo"     => ["ssap://tv/getChannelProgramInfo"],
             "getForegroundAppInfo"      => ["ssap://com.webos.applicationManager/getForegroundAppInfo"],
             "getAppList"                => ["ssap://com.webos.applicationManager/listApps"],
-            "screenMsg"                 => ["ssap://system.notifications/createToast", "message"],
-            "mute"                      => ["ssap://audio/setMute", "mute"],
+            "getAppStatus"              => ["ssap://com.webos.service.appstatus/getAppStatus"],
+            "getExternalInputList"      => ["ssap://tv/getExternalInputList"],
             "powerOff"                  => ["ssap://system/turnOff"],
             "powerOn"                   => ["ssap://system/turnOn"],
-            "volume"                    => ["ssap://audio/setVolume", "volume"],
             "volumeUp"                  => ["ssap://audio/volumeUp"],
             "volumeDown"                => ["ssap://audio/volumeDown"],
             "channelDown"               => ["ssap://tv/channelDown"],
             "channelUp"                 => ["ssap://tv/channelUp"],
             "openChannel"               => ["ssap://tv/openChannel", "channel"],
+            "openApp"                   => ["ssap://system.launcher/open"],
+            "launchApp"                 => ["ssap://system.launcher/launch", "id"],
+            "screenMsg"                 => ["ssap://system.notifications/createToast", "message"],
+            "mute"                      => ["ssap://audio/setMute", "mute"],
+            "volume"                    => ["ssap://audio/setVolume", "volume"],
+);
+
+my %openApps = (
+
+            'Maxdome'                   => 'maxdome',
+            'AmazonVideo'               => 'lovefilm.de',
+            'YouTube'                   => 'youtube.leanback.v4',
+            'Netflix'                   => 'netflix',
+            'TV'                        => 'com.webos.app.livetv',
+            'GooglePlay'                => 'googleplaymovieswebos',
+            'Browser'                   => 'com.webos.app.browser',
+            'Chilieu'                   => 'chilieu',
+            'TVCast'                    => 'de.2kit.castbrowsing',
+            'Smartshare'                => 'com.webos.app.smartshare',
+            'Scheduler'                 => 'com.webos.app.scheduler',
+            'Miracast'                  => 'com.webos.app.miracast',
+            'TVGuide'                   => 'com.webos.app.tvguide',
+            'Timemachine'               => 'com.webos.app.timemachine',
+            'ARDMediathek'              => 'ard.mediathek',
+            'Arte'                      => 'com.3827031.168353',
+            'WetterMeteo'               => 'meteonews'
+);
+
+my %openAppsPackageName = (
+
+            'maxdome'                   => 'Maxdome',
+            'lovefilm.de'               => 'AmazonVideo',
+            'youtube.leanback.v4'       => 'YouTube',
+            'netflix'                   => 'Netflix',
+            'com.webos.app.livetv'      => 'TV',
+            'googleplaymovieswebos'     => 'GooglePlay',
+            'com.webos.app.browser'     => 'Browser',
+            'chilieu'                   => 'Chilieu',
+            'de.2kit.castbrowsing'      => 'TVCast',
+            'com.webos.app.smartshare'  => 'Smartshare',
+            'com.webos.app.scheduler'   => 'Scheduler',
+            'com.webos.app.miracast'    => 'Miracast',
+            'com.webos.app.tvguide'     => 'TVGuide',
+            'com.webos.app.timemachine' => 'Timemachine',
+            'ard.mediathek'             => 'ARDMediathek',
+            'com.3827031.168353'        => 'Arte',
+            'meteonews'                 => 'WetterMeteo'
 );
 
 
@@ -236,8 +283,9 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         Log3 $name, 4, "LGTV_WebOS ($name) - run get functions";
     
         InternalTimer( gettimeofday()+1, 'LGTV_WebOS_GetAudioStatus', $hash, 0 );
-        InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 );
+        InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 ) if(ReadingsVal($name,'launchApp', 'none') eq 'com.webos.app.livetv');
         InternalTimer( gettimeofday()+3, 'LGTV_WebOS_GetForgroundAppInfo', $hash, 0 );
+        ##InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
         
     } elsif( IsDisabled($name) ) {
         readingsSingleUpdate ( $hash, "state", "disabled", 1 );
@@ -307,6 +355,12 @@ sub LGTV_WebOS_Set($@) {
         $payload{$lgCommands{$cmd}->[1]}    = join(" ", @args);
         $uri                                = $lgCommands{$cmd}->[0];
         
+    } elsif($cmd eq 'launchApp') {
+        return "usage: launchApp" if( @args != 1 );
+
+        $payload{$lgCommands{$cmd}->[1]}    = $openApps{join(" ", @args)};
+        $uri                                = $lgCommands{$cmd}->[0];
+        
     } elsif($cmd eq 'volumeUp') {
         return "usage: volumeUp" if( @args != 0 );
 
@@ -355,7 +409,8 @@ sub LGTV_WebOS_Set($@) {
 
     } else {
         my  $list = ""; 
-        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg openChannel getServiceList:noArg on:noArg off:noArg getAppList:noArg";
+        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo";
+        #$list .= "channel:" . join(' ',ReadingsVal($name,'channelName','none'));
         return "Unknown argument $cmd, choose one of $list";
     }
     
@@ -368,7 +423,7 @@ sub LGTV_WebOS_Open($) {
     my $name    = $hash->{NAME};
     my $host    = $hash->{HOST};
     my $port    = 3000;
-    my $timeout = 1;
+    my $timeout = 0.1;
     
     
     Log3 $name, 4, "LGTV_WebOS ($name) - Baue Socket Verbindung auf";
@@ -377,7 +432,7 @@ sub LGTV_WebOS_Open($) {
     my $socket = new IO::Socket::INET   (   PeerHost => $host,
                                             PeerPort => $port,
                                             Proto => 'tcp',
-                                            Timeout => 0.1
+                                            Timeout => $timeout
                                         )
         or return Log3 $name, 4, "LGTV_WebOS ($name) Couldn't connect to $host:$port";      # open Socket
         
@@ -433,7 +488,11 @@ sub LGTV_WebOS_Read($) {
     
     my $len;
     my $buf;
+    #my $data;
     
+    
+  
+  
     Log3 $name, 4, "LGTV_WebOS ($name) - ReadFn gestartet";
 
     $len = sysread($hash->{CD},$buf,1024);          # die genaue Puffergröße wird noch ermittelt
@@ -449,8 +508,27 @@ sub LGTV_WebOS_Read($) {
         return; 
     }
     
-    Log3 $name, 5, "LGTV_WebOS ($name) - received buffer data, start response processing: $buf";
-    LGTV_WebOS_ResponseProcessing($hash,$buf);
+    
+    #my $data = $hash->{PARTIAL};
+    
+    #Log3 $name, 5, "LGTV_WebOS ($name) - $data/$buf";
+    
+    #$data .= $buf;
+
+    #while($data =~ m/\n/) {
+    #    my $rmsg;
+        
+    #    ($rmsg,$data) = split("\n", $data, 2);
+    #    $rmsg =~ s/\r//;
+    #    $hash->{PARTIAL} = $data;   # for recursive calls
+        
+        Log3 $name, 5, "LGTV_WebOS ($name) - received buffer data, start response processing: $buf";
+        LGTV_WebOS_ResponseProcessing($hash,$buf); # if($rmsg);
+        
+    #    $data = $hash->{PARTIAL};
+    #}
+    
+    #$hash->{PARTIAL} = $data;
 }
 
 sub LGTV_WebOS_Handshake($) {
@@ -564,6 +642,13 @@ sub LGTV_WebOS_WriteReadings($$) {
         }
     }
     
+    if( ref($decode_json->{payload}{devices}) eq "ARRAY" and scalar(@{$decode_json->{payload}{devices}}) > 0 ) {
+        foreach my $devices (@{$decode_json->{payload}{devices}}) {
+        
+            readingsBulkUpdate($hash,'extInput_'.$devices->{label},'connect_'.$devices->{connected});
+        }
+    }
+    
     if( defined($decode_json->{payload}{'mute'}) or defined($decode_json->{payload}{'muted'})) {
         if( defined($decode_json->{payload}{'mute'}) and $decode_json->{payload}{'mute'} eq 'true' ) {
     
@@ -607,10 +692,10 @@ sub LGTV_WebOS_WriteReadings($$) {
     readingsBulkUpdate($hash,'volume',$decode_json->{payload}{'volume'});
     readingsBulkUpdate($hash,'lastResponse',$response);
     
-    readingsBulkUpdate($hash,'currentChannelNumber',$decode_json->{payload}{'channelNumber'});
-    readingsBulkUpdate($hash,'currentChannelName',$decode_json->{payload}{'channelName'});
-    readingsBulkUpdate($hash,'currentChannelTypeName',$decode_json->{payload}{'channelTypeName'});
-    readingsBulkUpdate($hash,'currentApp',$decode_json->{payload}{'appId'});
+    readingsBulkUpdate($hash,'channel',$decode_json->{payload}{'channelNumber'});
+    readingsBulkUpdate($hash,'channelName',$decode_json->{payload}{'channelName'});
+    readingsBulkUpdate($hash,'channelTypeName',$decode_json->{payload}{'channelTypeName'});
+    readingsBulkUpdate($hash,'launchApp',$openAppsPackageName{$decode_json->{payload}{'appId'}});
     
     readingsEndUpdate($hash, 1);
 }
@@ -855,6 +940,16 @@ sub LGTV_WebOS_GetForgroundAppInfo($) {
     
     RemoveInternalTimer($hash,'LGTV_WebOS_GetForgroundAppInfo');
     LGTV_WebOS_CreateSendCommand($hash,$lgCommands{getForegroundAppInfo},undef);
+}
+
+sub LGTV_WebOS_GetExternalInputList($) {
+
+    my $hash        = shift;
+    my $name        = $hash->{NAME};
+    
+    
+    RemoveInternalTimer($hash,'LGTV_WebOS_GetExternalInputList');
+    LGTV_WebOS_CreateSendCommand($hash,$lgCommands{getExternalInputList},undef);
 }
 
 
