@@ -50,7 +50,7 @@ use JSON qw(decode_json encode_json);
 
 
 
-my $version = "0.0.49";
+my $version = "0.0.50";
 
 
 
@@ -300,11 +300,11 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - run get functions";
     
-        InternalTimer( gettimeofday()+1, 'LGTV_WebOS_GetAudioStatus', $hash, 0 );
-        InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 ) if(ReadingsVal($name,'launchApp', 'none') eq 'com.webos.app.livetv');
-        InternalTimer( gettimeofday()+3, 'LGTV_WebOS_GetForgroundAppInfo', $hash, 0 );
-        InternalTimer( gettimeofday()+4, 'LGTV_WebOS_Get3DStatus', $hash, 0 );
-        ##InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
+        LGTV_WebOS_GetAudioStatus($hash);
+        InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 ) if(ReadingsVal($name,'launchApp', 'none') eq 'com.webos.app.livetv' or ReadingsVal($name,'launchApp', 'none') eq 'none');
+        InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetForgroundAppInfo', $hash, 0 );
+        InternalTimer( gettimeofday()+6, 'LGTV_WebOS_Get3DStatus', $hash, 0 );
+        ##InternalTimer( gettimeofday()+8, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
         
     } elsif( IsDisabled($name) ) {
         readingsSingleUpdate ( $hash, "state", "disabled", 1 );
@@ -610,17 +610,6 @@ sub LGTV_WebOS_ProcessRead($$) {
         $hash->{LAST_RECV} = time();
         
         Log3 $name, 5, "LGTV_WebOS ($name) - Decoding JSON message. Length: " . length($json) . " Content: " . $json;
-        
-        my $obj = decode_json($json);
-        if(defined($obj->{type})) {
-        
-            Log3 $name, 4, "LGTV_WebOS ($name) - no type in object, json error";
-            return $json;
-            
-        } elsif(defined($obj->{error})) {
-        
-            Log3 $name, 4, "LGTV_WebOS ($name) - Received error message: " . $json;
-        }
         
         ($json,$tail) = LGTV_WebOS_ParseMsg($hash, $tail);
     }
