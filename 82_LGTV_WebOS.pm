@@ -50,7 +50,7 @@ use JSON qw(decode_json encode_json);
 
 
 
-my $version = "0.0.46";
+my $version = "0.0.47";
 
 
 
@@ -611,11 +611,11 @@ sub LGTV_WebOS_ProcessRead($$) {
         
         Log3 $name, 5, "LGTV_WebOS ($name) - Decoding JSON message. Length: " . length($json) . " Content: " . $json;
         
-        my $obj = JSON->new->utf8(0)->decode($json);
+        my $obj = decode($json);
         if(defined($obj->{type})) {
         
+            Log3 $name, 4, "LGTV_WebOS ($name) - no type in object, json error";
             return $json;
-            Log3 $name, 4, "LGTV_WebOS ($name) - starte LGTV_WebOS_ResponseProcessing";
             
         } elsif(defined($obj->{error})) {
         
@@ -797,16 +797,17 @@ sub LGTV_WebOS_WriteReadings($$) {
         }
     }
     
-    if( defined($decode_json->{payload}{status3D}{pattern}) ) {
-        if( $decode_json->{payload}{status3D}{pattern} eq '2d' ) {
+    if( defined($decode_json->{payload}{status3D}{status}) ) {
+        if( $decode_json->{payload}{status3D}{status} eq 'false' ) {
         
             readingsBulkUpdate($hash,'3D','off');
         
-        } elsif( $decode_json->{payload}{status3D}{pattern} eq '3d' ) {
+        } elsif( $decode_json->{payload}{status3D}{status} eq 'true' ) {
         
             readingsBulkUpdate($hash,'3D','on');
         }
         
+        readingsBulkUpdate($hash,'3DMode',$decode_json->{payload}{status3D}{pattern});
     }
     
     
