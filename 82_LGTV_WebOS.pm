@@ -50,7 +50,7 @@ use JSON qw(decode_json encode_json);
 
 
 
-my $version = "0.0.50";
+my $version = "0.0.53";
 
 
 
@@ -301,10 +301,10 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         Log3 $name, 4, "LGTV_WebOS ($name) - run get functions";
     
         LGTV_WebOS_GetAudioStatus($hash);
-        InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 ) if(ReadingsVal($name,'launchApp', 'none') eq 'com.webos.app.livetv' or ReadingsVal($name,'launchApp', 'none') eq 'none');
+        InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 ) if( ReadingsVal($name,'launchApp', 'TV') eq 'TV' );
         InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetForgroundAppInfo', $hash, 0 );
         InternalTimer( gettimeofday()+6, 'LGTV_WebOS_Get3DStatus', $hash, 0 );
-        ##InternalTimer( gettimeofday()+8, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
+        #InternalTimer( gettimeofday()+8, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
         
     } elsif( IsDisabled($name) ) {
         readingsSingleUpdate ( $hash, "state", "disabled", 1 );
@@ -474,7 +474,7 @@ sub LGTV_WebOS_Set($@) {
 
     } else {
         my  $list = ""; 
-        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off getExternalInputList:noArg stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg";
+        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg";
         #$list .= "channel:" . join(' ',ReadingsVal($name,'channelName','none'));
         return "Unknown argument $cmd, choose one of $list";
     }
@@ -557,7 +557,7 @@ sub LGTV_WebOS_Read($) {
     
     Log3 $name, 4, "LGTV_WebOS ($name) - ReadFn gestartet";
 
-    $len = sysread($hash->{CD},$buf,4096);          # die genaue Puffergröße wird noch ermittelt
+    $len = sysread($hash->{CD},$buf,1024);          # die genaue Puffergröße wird noch ermittelt
     
     if( !defined($len) or !$len ) {
         Log3 $name, 4, "LGTV_WebOS ($name) - connection closed by remote Host";
@@ -585,8 +585,7 @@ sub LGTV_WebOS_ProcessRead($$) {
     
     Log3 $name, 4, "LGTV_WebOS ($name) - process read";
 
-    #include previous partial message
-    if(defined($hash->{PARTIAL}) && $hash->{PARTIAL}) {
+    if(defined($hash->{PARTIAL}) and $hash->{PARTIAL}) {
     
         Log3 $name, 5, "LGTV_WebOS ($name) - PARTIAL: " . $hash->{PARTIAL};
         $buffer = $hash->{PARTIAL};
@@ -603,15 +602,20 @@ sub LGTV_WebOS_ProcessRead($$) {
 
     my ($json,$tail) = LGTV_WebOS_ParseMsg($hash, $buffer);
     
-    
-    #processes all complete messages
+
     while($json) {
     
         $hash->{LAST_RECV} = time();
         
         Log3 $name, 5, "LGTV_WebOS ($name) - Decoding JSON message. Length: " . length($json) . " Content: " . $json;
+        Log3 $name, 5, "LGTV_WebOS ($name) - Vor Sub: Laenge JSON: " . length($json) . " Content: " . $json . " Tail: " . $tail;
+        
+        return $json
+        unless(not defined($tail) and not ($tail));
         
         ($json,$tail) = LGTV_WebOS_ParseMsg($hash, $tail);
+        
+        Log3 $name, 5, "LGTV_WebOS ($name) - Nach Sub: Laenge JSON: " . length($json) . " Content: " . $json . " Tail: " . $tail;
     }
     
     $hash->{PARTIAL} = $tail;
@@ -701,11 +705,12 @@ sub LGTV_WebOS_ResponseProcessing($$) {
         my $json        = LGTV_WebOS_ProcessRead($hash,$response);
         Log3 $name, 5, "LGTV_WebOS ($name) - Corrected JSON String: $json" if($json);
         
-        if(not defined($json) and not ($json) ) {
+        if(not defined($json) or not ($json) ) {
         
             Log3 $name, 4, "LGTV_WebOS ($name) - Corrected JSON String empty";
             return;
         }
+        
         my $decode_json     = decode_json($json);
         
         LGTV_WebOS_WriteReadings($hash,$decode_json);
