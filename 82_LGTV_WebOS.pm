@@ -50,7 +50,7 @@ use JSON qw(decode_json encode_json);
 
 
 
-my $version = "0.0.40";
+my $version = "0.0.46";
 
 
 
@@ -79,6 +79,9 @@ sub LGTV_WebOS_GetForgroundAppInfo($);
 sub LGTV_WebOS_GetAudioStatus($);
 sub LGTV_WebOS_TimerStatusRequest($);
 sub LGTV_WebOS_GetExternalInputList($);
+sub LGTV_WebOS_ProcessRead($$);
+sub LGTV_WebOS_ParseMsg($$);
+sub LGTV_WebOS_Get3DStatus($);
 
 
 
@@ -95,18 +98,31 @@ my %lgCommands = (
             "getAppList"                => ["ssap://com.webos.applicationManager/listApps"],
             "getAppStatus"              => ["ssap://com.webos.service.appstatus/getAppStatus"],
             "getExternalInputList"      => ["ssap://tv/getExternalInputList"],
+            "get3DStatus"               => ["ssap://com.webos.service.tv.display/get3DStatus"],
             "powerOff"                  => ["ssap://system/turnOff"],
             "powerOn"                   => ["ssap://system/turnOn"],
+            "3DOn"                      => ["ssap://com.webos.service.tv.display/set3DOn"],
+            "3DOff"                     => ["ssap://com.webos.service.tv.display/set3DOff"],
             "volumeUp"                  => ["ssap://audio/volumeUp"],
             "volumeDown"                => ["ssap://audio/volumeDown"],
             "channelDown"               => ["ssap://tv/channelDown"],
             "channelUp"                 => ["ssap://tv/channelUp"],
+            "play"                      => ["ssap://media.controls/play"],
+            "stop"                      => ["ssap://media.controls/stop"],
+            "pause"                     => ["ssap://media.controls/pause"],
+            "rewind"                    => ["ssap://media.controls/rewind"],
+            "fastForward"               => ["ssap://media.controls/fastForward"],
+            "closeViewer"               => ["ssap://media.viewer/close"],
+            "closeApp"                  => ["ssap://system.launcher/close"],
+            "openApp"                   => ["ssap://system.launcher/open"],
+            "closeWebApp"               => ["ssap://webapp/closeWebApp"],
             "openChannel"               => ["ssap://tv/openChannel", "channel"],
             "openApp"                   => ["ssap://system.launcher/open"],
             "launchApp"                 => ["ssap://system.launcher/launch", "id"],
             "screenMsg"                 => ["ssap://system.notifications/createToast", "message"],
             "mute"                      => ["ssap://audio/setMute", "mute"],
             "volume"                    => ["ssap://audio/setVolume", "volume"],
+            "switchInput"               => ["ssap://tv/switchInput", "input"],
 );
 
 my %openApps = (
@@ -118,7 +134,7 @@ my %openApps = (
             'TV'                        => 'com.webos.app.livetv',
             'GooglePlay'                => 'googleplaymovieswebos',
             'Browser'                   => 'com.webos.app.browser',
-            'Chilieu'                   => 'chilieu',
+            'Chili.tv'                  => 'Chilieu',
             'TVCast'                    => 'de.2kit.castbrowsing',
             'Smartshare'                => 'com.webos.app.smartshare',
             'Scheduler'                 => 'com.webos.app.scheduler',
@@ -127,28 +143,30 @@ my %openApps = (
             'Timemachine'               => 'com.webos.app.timemachine',
             'ARDMediathek'              => 'ard.mediathek',
             'Arte'                      => 'com.3827031.168353',
-            'WetterMeteo'               => 'meteonews'
+            'WetterMeteo'               => 'meteonews',
+            'Notificationcenter'        => 'com.webos.app.notificationcenter'
 );
 
 my %openAppsPackageName = (
 
-            'maxdome'                   => 'Maxdome',
-            'lovefilm.de'               => 'AmazonVideo',
-            'youtube.leanback.v4'       => 'YouTube',
-            'netflix'                   => 'Netflix',
-            'com.webos.app.livetv'      => 'TV',
-            'googleplaymovieswebos'     => 'GooglePlay',
-            'com.webos.app.browser'     => 'Browser',
-            'chilieu'                   => 'Chilieu',
-            'de.2kit.castbrowsing'      => 'TVCast',
-            'com.webos.app.smartshare'  => 'Smartshare',
-            'com.webos.app.scheduler'   => 'Scheduler',
-            'com.webos.app.miracast'    => 'Miracast',
-            'com.webos.app.tvguide'     => 'TVGuide',
-            'com.webos.app.timemachine' => 'Timemachine',
-            'ard.mediathek'             => 'ARDMediathek',
-            'com.3827031.168353'        => 'Arte',
-            'meteonews'                 => 'WetterMeteo'
+            'maxdome'                           => 'Maxdome',
+            'lovefilm.de'                       => 'AmazonVideo',
+            'youtube.leanback.v4'               => 'YouTube',
+            'netflix'                           => 'Netflix',
+            'com.webos.app.livetv'              => 'TV',
+            'googleplaymovieswebos'             => 'GooglePlay',
+            'com.webos.app.browser'             => 'Browser',
+            'Chilieu'                           => 'Chili.tv',
+            'de.2kit.castbrowsing'              => 'TVCast',
+            'com.webos.app.smartshare'          => 'Smartshare',
+            'com.webos.app.scheduler'           => 'Scheduler',
+            'com.webos.app.miracast'            => 'Miracast',
+            'com.webos.app.tvguide'             => 'TVGuide',
+            'com.webos.app.timemachine'         => 'Timemachine',
+            'ard.mediathek'                     => 'ARDMediathek',
+            'com.3827031.168353'                => 'Arte',
+            'meteonews'                         => 'WetterMeteo',
+            'com.webos.app.notificationcenter'  => 'Notificationcenter'
 );
 
 
@@ -285,12 +303,12 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         InternalTimer( gettimeofday()+1, 'LGTV_WebOS_GetAudioStatus', $hash, 0 );
         InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 ) if(ReadingsVal($name,'launchApp', 'none') eq 'com.webos.app.livetv');
         InternalTimer( gettimeofday()+3, 'LGTV_WebOS_GetForgroundAppInfo', $hash, 0 );
+        InternalTimer( gettimeofday()+4, 'LGTV_WebOS_Get3DStatus', $hash, 0 );
         ##InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
         
     } elsif( IsDisabled($name) ) {
         readingsSingleUpdate ( $hash, "state", "disabled", 1 );
     }
-    
     
     LGTV_WebOS_Open($hash) if( !IsDisabled($name) and not $hash->{CD} );
     
@@ -323,7 +341,9 @@ sub LGTV_WebOS_Set($@) {
     } elsif($cmd eq 'screenMsg') {
         return "usage: screenMsg <message>" if( @args < 1 );
 
-        $payload{$lgCommands{$cmd}->[1]}    = join(" ", @args);
+        my $msg = join(" ", @args);
+        #$msg =~ s/ä/u/g;
+        $payload{$lgCommands{$cmd}->[1]}    = $msg;
         $uri                                = $lgCommands{$cmd}->[0];
         
     } elsif($cmd eq 'on' or $cmd eq 'off') {
@@ -333,6 +353,15 @@ sub LGTV_WebOS_Set($@) {
             $uri                                = $lgCommands{powerOff};
         } elsif ($cmd eq 'on') {
             $uri                                = $lgCommands{powerOn};
+        }
+        
+    } elsif($cmd eq '3D') {
+        return "usage: 3D on/off" if( @args != 1 );
+
+        if($args[0] eq 'off') {
+            $uri                                = $lgCommands{'3DOff'};
+        } elsif ($args[0] eq 'on') {
+            $uri                                = $lgCommands{'3DOn'};
         }
         
     } elsif($cmd eq 'mute') {
@@ -360,6 +389,12 @@ sub LGTV_WebOS_Set($@) {
 
         $payload{$lgCommands{$cmd}->[1]}    = $openApps{join(" ", @args)};
         $uri                                = $lgCommands{$cmd}->[0];
+        
+    } elsif($cmd eq 'externalInputs') {
+        return "usage: externalInputs" if( @args != 1 );
+
+        $payload{$lgCommands{launchApp}->[1]}   = join(" ", @args);
+        $uri                                    = $lgCommands{launchApp}->[0];
         
     } elsif($cmd eq 'volumeUp') {
         return "usage: volumeUp" if( @args != 0 );
@@ -406,10 +441,40 @@ sub LGTV_WebOS_Set($@) {
         return "usage: getAppList" if( @args != 0 );
 
         $uri                                = $lgCommands{$cmd}->[0];
+        
+    } elsif($cmd eq 'getExternalInputList') {
+        return "usage: getExternalInputList" if( @args != 0 );
+
+        $uri                                = $lgCommands{$cmd}->[0];
+        
+    } elsif($cmd eq 'play') {
+        return "usage: play" if( @args != 0 );
+
+        $uri                                = $lgCommands{$cmd}->[0];
+        
+    } elsif($cmd eq 'stop') {
+        return "usage: stop" if( @args != 0 );
+
+        $uri                                = $lgCommands{$cmd}->[0];
+        
+    } elsif($cmd eq 'fastForward') {
+        return "usage: fastForward" if( @args != 0 );
+
+        $uri                                = $lgCommands{$cmd}->[0];
+        
+    } elsif($cmd eq 'rewind') {
+        return "usage: rewind" if( @args != 0 );
+
+        $uri                                = $lgCommands{$cmd}->[0];
+        
+    } elsif($cmd eq 'pause') {
+        return "usage: pause" if( @args != 0 );
+
+        $uri                                = $lgCommands{$cmd}->[0];
 
     } else {
         my  $list = ""; 
-        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo";
+        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off getExternalInputList:noArg stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg";
         #$list .= "channel:" . join(' ',ReadingsVal($name,'channelName','none'));
         return "Unknown argument $cmd, choose one of $list";
     }
@@ -488,14 +553,11 @@ sub LGTV_WebOS_Read($) {
     
     my $len;
     my $buf;
-    #my $data;
     
     
-  
-  
     Log3 $name, 4, "LGTV_WebOS ($name) - ReadFn gestartet";
 
-    $len = sysread($hash->{CD},$buf,1024);          # die genaue Puffergröße wird noch ermittelt
+    $len = sysread($hash->{CD},$buf,4096);          # die genaue Puffergröße wird noch ermittelt
     
     if( !defined($len) or !$len ) {
         Log3 $name, 5, "LGTV_WebOS ($name) - connection closed by remote Host";
@@ -509,26 +571,67 @@ sub LGTV_WebOS_Read($) {
     }
     
     
-    #my $data = $hash->{PARTIAL};
-    
-    #Log3 $name, 5, "LGTV_WebOS ($name) - $data/$buf";
-    
-    #$data .= $buf;
+    Log3 $name, 5, "LGTV_WebOS ($name) - received buffer data, start response processing: $buf";
+    LGTV_WebOS_ResponseProcessing($hash,$buf);
+}
 
-    #while($data =~ m/\n/) {
-    #    my $rmsg;
-        
-    #    ($rmsg,$data) = split("\n", $data, 2);
-    #    $rmsg =~ s/\r//;
-    #    $hash->{PARTIAL} = $data;   # for recursive calls
-        
-        Log3 $name, 5, "LGTV_WebOS ($name) - received buffer data, start response processing: $buf";
-        LGTV_WebOS_ResponseProcessing($hash,$buf); # if($rmsg);
-        
-    #    $data = $hash->{PARTIAL};
-    #}
+sub LGTV_WebOS_ProcessRead($$) {
+
+    my ($hash, $data) = @_;
+    my $name = $hash->{NAME};
     
-    #$hash->{PARTIAL} = $data;
+    my $buffer = '';
+    
+    
+    Log3 $name, 4, "LGTV_WebOS ($name) - process read";
+
+    #include previous partial message
+    if(defined($hash->{PARTIAL}) && $hash->{PARTIAL}) {
+    
+        Log3 $name, 5, "LGTV_WebOS ($name) - PARTIAL: " . $hash->{PARTIAL};
+        $buffer = $hash->{PARTIAL};
+        
+    } else {
+    
+        Log3 $name, 4, "LGTV_WebOS ($name) - No PARTIAL buffer";
+    }
+  
+    Log3 $name, 5, "LGTV_WebOS ($name) - Incoming data: " . $data;
+  
+    $buffer = $buffer  . $data;
+    Log3 $name, 5, "LGTV_WebOS ($name) - Current processing buffer (PARTIAL + incoming data): " . $buffer;
+
+    my ($json,$tail) = LGTV_WebOS_ParseMsg($hash, $buffer);
+    
+    
+    #processes all complete messages
+    while($json) {
+    
+        $hash->{LAST_RECV} = time();
+        
+        Log3 $name, 5, "LGTV_WebOS ($name) - Decoding JSON message. Length: " . length($json) . " Content: " . $json;
+        
+        my $obj = JSON->new->utf8(0)->decode($json);
+        if(defined($obj->{type})) {
+        
+            return $json;
+            Log3 $name, 4, "LGTV_WebOS ($name) - starte LGTV_WebOS_ResponseProcessing";
+            
+        } elsif(defined($obj->{error})) {
+        
+            Log3 $name, 3, "LGTV_WebOS ($name) - Received error message: " . $json;
+        }
+        
+        ($json,$tail) = LGTV_WebOS_ParseMsg($hash, $tail);
+    }
+    
+    $hash->{PARTIAL} = $tail;
+    
+    
+    Log3 $name, 5, "LGTV_WebOS ($name) - Tail: " . $tail;
+    Log3 $name, 5, "LGTV_WebOS ($name) - PARTIAL: " . $hash->{PARTIAL};
+    
+    return;
 }
 
 sub LGTV_WebOS_Handshake($) {
@@ -605,9 +708,15 @@ sub LGTV_WebOS_ResponseProcessing($$) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - JSON detected, beginn PreResponseProsessing";
         
-        my $json        = LGTV_WebOS_PreResponseProsessing($hash,$response);
-        Log3 $name, 5, "LGTV_WebOS ($name) - Corrected JSON String: $json";
+        #my $json        = LGTV_WebOS_PreResponseProsessing($hash,$response);
+        my $json        = LGTV_WebOS_ProcessRead($hash,$response);
+        Log3 $name, 5, "LGTV_WebOS ($name) - Corrected JSON String: $json" if($json);
         
+        if(not defined($json) and not ($json) ) {
+        
+            Log3 $name, 5, "LGTV_WebOS ($name) - Corrected JSON String empty";
+            return;
+        }
         my $decode_json     = decode_json($json);
         
         LGTV_WebOS_WriteReadings($hash,$decode_json);
@@ -654,11 +763,12 @@ sub LGTV_WebOS_WriteReadings($$) {
     
             readingsBulkUpdate($hash,'mute','on');
             
-        } elsif( defined($decode_json->{payload}{'mute'}) and $decode_json->{payload}{'mute'} eq 'false' ) {
+        } elsif( defined($decode_json->{payload}{'mute'}) ) {
+            if( $decode_json->{payload}{'mute'} eq 'false' ) {
         
-            readingsBulkUpdate($hash,'mute','off');
-        
-        } 
+                readingsBulkUpdate($hash,'mute','off');
+            }
+        }
         
         if( defined($decode_json->{payload}{'muted'}) and $decode_json->{payload}{'muted'} eq 'true' ) {
         
@@ -673,7 +783,7 @@ sub LGTV_WebOS_WriteReadings($$) {
     if( defined($decode_json->{type}) ) {
         if( ($decode_json->{type} eq 'response' and $decode_json->{payload}{returnValue} eq 'true') or ($decode_json->{type} eq 'registered') and defined($decode_json->{payload}{'client-key'}) ) {
         
-            $response = 'ok';   # if( $decode_json->{type} eq 'response' and $decode_json->{payload}{returnValue} eq 'true' );
+            $response = 'ok';
             readingsBulkUpdate($hash,'pairing','paired');
             
         } elsif( $decode_json->{type} eq 'error' ) {
@@ -687,6 +797,18 @@ sub LGTV_WebOS_WriteReadings($$) {
         }
     }
     
+    if( defined($decode_json->{payload}{status3D}{pattern}) ) {
+        if( $decode_json->{payload}{status3D}{pattern} eq '2d' ) {
+        
+            readingsBulkUpdate($hash,'3D','off');
+        
+        } elsif( $decode_json->{payload}{status3D}{pattern} eq '3d' ) {
+        
+            readingsBulkUpdate($hash,'3D','on');
+        }
+        
+    }
+    
     
     readingsBulkUpdate($hash,'lgKey',$decode_json->{payload}{'client-key'});
     readingsBulkUpdate($hash,'volume',$decode_json->{payload}{'volume'});
@@ -695,7 +817,7 @@ sub LGTV_WebOS_WriteReadings($$) {
     readingsBulkUpdate($hash,'channel',$decode_json->{payload}{'channelNumber'});
     readingsBulkUpdate($hash,'channelName',$decode_json->{payload}{'channelName'});
     readingsBulkUpdate($hash,'channelTypeName',$decode_json->{payload}{'channelTypeName'});
-    readingsBulkUpdate($hash,'launchApp',$openAppsPackageName{$decode_json->{payload}{'appId'}});
+    readingsBulkUpdate($hash,'launchApp',$openAppsPackageName{$decode_json->{payload}{'appId'}}) if( defined($decode_json->{payload}{'appId'}) );
     
     readingsEndUpdate($hash, 1);
 }
@@ -952,11 +1074,68 @@ sub LGTV_WebOS_GetExternalInputList($) {
     LGTV_WebOS_CreateSendCommand($hash,$lgCommands{getExternalInputList},undef);
 }
 
+sub LGTV_WebOS_Get3DStatus($) {
+
+    my $hash        = shift;
+    my $name        = $hash->{NAME};
+    
+    
+    RemoveInternalTimer($hash,'LGTV_WebOS_Get3DStatus');
+    LGTV_WebOS_CreateSendCommand($hash,$lgCommands{get3DStatus},undef);
+}
+
 
 
 
 #############################################
 ### my little Helper
+
+sub LGTV_WebOS_ParseMsg($$) {
+
+    my ($hash, $buffer) = @_;
+    
+    my $name = $hash->{NAME};
+    my $open = 0;
+    my $close = 0;
+    my $msg = '';
+    my $tail = '';
+    
+    
+    if($buffer) {
+        foreach my $c (split //, $buffer) {
+            if($open == $close && $open > 0) {
+                $tail .= $c;
+                Log3 $name, 5, "LGTV_WebOS ($name) - $open == $close && $open > 0";
+                
+            } elsif(($open == $close) && ($c ne '{')) {
+            
+                Log3 $name, 5, "LGTV_WebOS ($name) - Garbage character before message: " . $c;
+        
+            } else {
+      
+                if($c eq '{') {
+
+                    $open++;
+                
+                } elsif($c eq '}') {
+                
+                    $close++;
+                }
+                
+                $msg .= $c;
+            }
+        }
+        
+        if($open != $close) {
+    
+            $tail = $msg;
+            $msg = '';
+        }
+    }
+    
+    Log3 $name, 5, "LGTV_WebOS ($name) - return msg: $msg and tail: $tail";
+    return ($msg,$tail);
+}
 
 sub LGTV_WebOS_Header2Hash($) {
 
