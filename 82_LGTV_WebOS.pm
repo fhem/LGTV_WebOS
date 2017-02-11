@@ -50,7 +50,7 @@ use JSON qw(decode_json encode_json);
 
 
 
-my $version = "0.0.47";
+my $version = "0.0.49";
 
 
 
@@ -541,7 +541,7 @@ sub LGTV_WebOS_Write($@) {
     return Log3 $name, 4, "LGTV_WebOS ($name) - socket not connected"
     unless($hash->{CD});
 
-    Log3 $name, 5, "LGTV_WebOS ($name) - $string";
+    Log3 $name, 4, "LGTV_WebOS ($name) - $string";
     syswrite($hash->{CD}, $string);
     return undef;
 }
@@ -560,7 +560,7 @@ sub LGTV_WebOS_Read($) {
     $len = sysread($hash->{CD},$buf,4096);          # die genaue Puffergröße wird noch ermittelt
     
     if( !defined($len) or !$len ) {
-        Log3 $name, 5, "LGTV_WebOS ($name) - connection closed by remote Host";
+        Log3 $name, 4, "LGTV_WebOS ($name) - connection closed by remote Host";
         LGTV_WebOS_Close($hash);
         return;
     }
@@ -571,7 +571,7 @@ sub LGTV_WebOS_Read($) {
     }
     
     
-    Log3 $name, 5, "LGTV_WebOS ($name) - received buffer data, start response processing: $buf";
+    Log3 $name, 4, "LGTV_WebOS ($name) - received buffer data, start response processing: $buf";
     LGTV_WebOS_ResponseProcessing($hash,$buf);
 }
 
@@ -611,7 +611,7 @@ sub LGTV_WebOS_ProcessRead($$) {
         
         Log3 $name, 5, "LGTV_WebOS ($name) - Decoding JSON message. Length: " . length($json) . " Content: " . $json;
         
-        my $obj = decode($json);
+        my $obj = decode_json($json);
         if(defined($obj->{type})) {
         
             Log3 $name, 4, "LGTV_WebOS ($name) - no type in object, json error";
@@ -619,7 +619,7 @@ sub LGTV_WebOS_ProcessRead($$) {
             
         } elsif(defined($obj->{error})) {
         
-            Log3 $name, 3, "LGTV_WebOS ($name) - Received error message: " . $json;
+            Log3 $name, 4, "LGTV_WebOS ($name) - Received error message: " . $json;
         }
         
         ($json,$tail) = LGTV_WebOS_ParseMsg($hash, $tail);
@@ -654,7 +654,7 @@ sub LGTV_WebOS_Handshake($) {
     
     $hash->{helper}{wsKey}  = $wsKey;
     
-    Log3 $name, 5, "LGTV_WebOS ($name) - send Handshake to WriteFn";
+    Log3 $name, 4, "LGTV_WebOS ($name) - send Handshake to WriteFn";
     
     
     LGTV_WebOS_TimerStatusRequest($hash);
@@ -714,7 +714,7 @@ sub LGTV_WebOS_ResponseProcessing($$) {
         
         if(not defined($json) and not ($json) ) {
         
-            Log3 $name, 5, "LGTV_WebOS ($name) - Corrected JSON String empty";
+            Log3 $name, 4, "LGTV_WebOS ($name) - Corrected JSON String empty";
             return;
         }
         my $decode_json     = decode_json($json);
