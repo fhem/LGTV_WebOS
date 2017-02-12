@@ -50,7 +50,7 @@ use JSON qw(decode_json encode_json);
 
 
 
-my $version = "0.0.53";
+my $version = "0.0.55";
 
 
 
@@ -701,8 +701,8 @@ sub LGTV_WebOS_ResponseProcessing($$) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - JSON detected, beginn PreResponseProsessing";
         
-        #my $json        = LGTV_WebOS_PreResponseProsessing($hash,$response);
-        my $json        = LGTV_WebOS_ProcessRead($hash,$response);
+        my $json        = LGTV_WebOS_PreResponseProsessing($hash,$response);
+        #my $json        = LGTV_WebOS_ProcessRead($hash,$response);
         Log3 $name, 5, "LGTV_WebOS ($name) - Corrected JSON String: $json" if($json);
         
         if(not defined($json) or not ($json) ) {
