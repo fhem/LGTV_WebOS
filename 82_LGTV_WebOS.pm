@@ -28,6 +28,12 @@
 #################################
 ######### Wichtige Hinweise und Links #################
 
+### Neue oder andere Readings
+# channel        Vox
+# channelId      258
+# currentTitle   Nachrichten
+# presence       present
+# input          TV  ????
 
 ##
 #
@@ -51,7 +57,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.58";
+my $version = "0.0.60";
 
 
 
@@ -302,8 +308,10 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     if( !IsDisabled($name) and $hash->{CD} ) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - run get functions";
-    
-    
+
+        readingsBulkUpdate($hash,'state', 'on');
+        readingsBulkUpdate($hash,'presence', 'present');
+
         LGTV_WebOS_GetAudioStatus($hash);
         
         if( ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {;
@@ -317,6 +325,11 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         
     } elsif( IsDisabled($name) ) {
         readingsSingleUpdate ( $hash, "state", "disabled", 1 );
+    
+    } else {
+    
+        readingsBulkUpdate($hash,'state', 'off');
+        readingsBulkUpdate($hash,'presence', 'absent');
     }
     
     LGTV_WebOS_Open($hash) if( !IsDisabled($name) and not $hash->{CD} );
@@ -835,21 +848,20 @@ sub LGTV_WebOS_WriteReadings($$) {
     
     readingsBulkUpdate($hash,'lgKey',$decode_json->{payload}{'client-key'});
     readingsBulkUpdate($hash,'volume',$decode_json->{payload}{'volume'});
-    readingsBulkUpdate($hash,'state', 'on') if( defined($decode_json->{payload}{'volume'}) );
     readingsBulkUpdate($hash,'lastResponse',$response);
     readingsBulkUpdate($hash,'launchApp',$openAppsPackageName{$decode_json->{payload}{'appId'}}) if( defined($decode_json->{payload}{'appId'}) );
     
     if( ReadingsVal($name,'launchApp','none') eq 'TV') {
     
-        readingsBulkUpdate($hash,'channel',$decode_json->{payload}{'channelNumber'});
-        readingsBulkUpdate($hash,'channelName',$decode_json->{payload}{'channelName'});
-        readingsBulkUpdate($hash,'channelTypeName',$decode_json->{payload}{'channelTypeName'});
+        readingsBulkUpdate($hash,'channelId',$decode_json->{payload}{'channelNumber'});
+        readingsBulkUpdate($hash,'channel',$decode_json->{payload}{'channelName'});
+        readingsBulkUpdate($hash,'channelMedia',$decode_json->{payload}{'channelTypeName'});
     
     } else {
     
+        readingsBulkUpdate($hash,'channelId','-');
         readingsBulkUpdate($hash,'channel','-');
-        readingsBulkUpdate($hash,'channelName','-');
-        readingsBulkUpdate($hash,'channelTypeName','-');
+        readingsBulkUpdate($hash,'channelMedia','-');
         readingsBulkUpdate($hash,'currentTitle','-');
     }
 
