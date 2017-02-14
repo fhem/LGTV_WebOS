@@ -57,7 +57,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.61";
+my $version = "0.0.62";
 
 
 
@@ -196,6 +196,7 @@ sub LGTV_WebOS_Initialize($) {
     $hash->{UndefFn}    = "LGTV_WebOS_Undef";
     $hash->{AttrFn}     = "LGTV_WebOS_Attr";
     $hash->{AttrList}   = "disable:1 ".
+                          "channelGuide:1 ".
                           $readingFnAttributes;
 
 
@@ -312,14 +313,14 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         Log3 $name, 4, "LGTV_WebOS ($name) - run get functions";
 
         
-        readingsBulkUpdate($hash,'state', 'on');
-        readingsBulkUpdate($hash,'presence', 'present');
+        readingsBulkUpdate($hash, 'state', 'on');
+        readingsBulkUpdate($hash, 'presence', 'present');
 
         LGTV_WebOS_GetAudioStatus($hash);
         
         if( ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {;
             InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 );
-            InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetChannelProgramInfo', $hash, 0 );
+            InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetChannelProgramInfo', $hash, 0 ) if( AttrVal($name,'channelGuide', 0) == 1 );
         }
         
         InternalTimer( gettimeofday()+8, 'LGTV_WebOS_GetForgroundAppInfo', $hash, 0 );
@@ -327,12 +328,12 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         InternalTimer( gettimeofday()+12, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
         
     } elsif( IsDisabled($name) ) {
-        readingsSingleUpdate ( $hash, "state", "disabled", 1 );
+        readingsBulkUpdate($hash, 'state', 'disabled');
     
     } else {
     
-        readingsBulkUpdate($hash,'state', 'off');
-        readingsBulkUpdate($hash,'presence', 'absent');
+        readingsBulkUpdate($hash, 'state', 'off');
+        readingsBulkUpdate($hash, 'presence', 'absent');
     }
     
     readingsEndUpdate($hash, 1);
@@ -823,7 +824,9 @@ sub LGTV_WebOS_WriteReadings($$) {
         foreach my $programList ( @{$decode_json->{payload}{programList}} ) {
         
             $hash->{helper}{device}{channelguide}{$count}{programname}   = $programList->{programName};
-            $count++
+            
+            $count++;
+            return if($count > 1);
         }
     }
     
