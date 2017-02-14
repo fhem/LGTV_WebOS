@@ -28,12 +28,6 @@
 #################################
 ######### Wichtige Hinweise und Links #################
 
-### Neue oder andere Readings
-# channel        Vox
-# channelId      258
-# currentTitle   Nachrichten
-# presence       present
-# input          TV  ????
 
 ##
 #
@@ -57,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.62";
+my $version = "0.0.65";
 
 
 
@@ -350,17 +344,17 @@ sub LGTV_WebOS_Set($@) {
 
     my $uri;
     my %payload;
-    #my $inputs = '';
+    my $inputs;
+    my @inputs;
     
     
-    #if ( defined( $hash->{helper}{device}{inputs}) and ref( $hash->{helper}{device}{inputs} ) eq "HASH" ) {
-        
-    #    foreach my $id (sort keys %{ $hash->{helper}{device}{inputs} }) {
-        
-    #        $inputs .= ',' if($id != 0);
-    #        $inputs .= $hash->{helper}{device}{inputs}{$id}{input};
-    #    }
-    #}
+    if ( defined( $hash->{helper}{device}{inputs} ) and ref( $hash->{helper}{device}{inputs} ) eq "HASH" ) {
+    
+        @inputs = keys %{ $hash->{helper}{device}{inputs} };
+    }
+    
+    @inputs = sort(@inputs);
+    $inputs = join(",", @inputs);
     
     if($cmd eq 'connect') {
         return "usage: connect" if( @args != 0 );
@@ -373,6 +367,7 @@ sub LGTV_WebOS_Set($@) {
         return "usage: clearInputList" if( @args != 0 );
 
         delete $hash->{helper}{device}{inputs};
+        delete $hash->{helper}{device}{inputapps};
 
         return undef;
 
@@ -435,10 +430,11 @@ sub LGTV_WebOS_Set($@) {
         $payload{$lgCommands{$cmd}->[1]}    = $openApps{join(" ", @args)};
         $uri                                = $lgCommands{$cmd}->[0];
         
-    } elsif($cmd eq 'externalInputs') {
-        return "usage: externalInputs" if( @args != 1 );
+    } elsif($cmd eq 'input') {
+        return "usage: input" if( @args != 1 );
 
-        $payload{$lgCommands{launchApp}->[1]}   = join(" ", @args);
+        my $inputLabel                          = join(" ", @args);
+        $payload{$lgCommands{launchApp}->[1]}   = $hash->{helper}{device}{inputs}{$inputLabel};
         $uri                                    = $lgCommands{launchApp}->[0];
         
     } elsif($cmd eq 'volumeUp') {
@@ -514,8 +510,7 @@ sub LGTV_WebOS_Set($@) {
 
     } else {
         my  $list = ""; 
-        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg";
-        #$list .= "channel:" . join(' ',ReadingsVal($name,'channelName','none'));
+        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg input:$inputs";
         return "Unknown argument $cmd, choose one of $list";
     }
     
@@ -803,16 +798,13 @@ sub LGTV_WebOS_WriteReadings($$) {
     
     elsif( ref($decode_json->{payload}{devices}) eq "ARRAY" and scalar(@{$decode_json->{payload}{devices}}) > 0 ) {
             
-        #my $count = 0;
         foreach my $devices ( @{$decode_json->{payload}{devices}} ) {
 
-            #if( not defined($hash->{helper}{device}{inputs}{$count}) ) {
+            if( not defined($hash->{helper}{device}{inputs}{$devices->{label}}) or not defined($hash->{helper}{device}{inputapps}{$devices->{appId}}) ) {
             
-            #    $hash->{helper}{device}{inputs}{$count}{input}     = $devices->{label};
-            #    $hash->{helper}{device}{inputs}{$count}{appid}     = $devices->{appId};
-            #}
-            
-            #$count++;
+                $hash->{helper}{device}{inputs}{$devices->{label}}   = $devices->{appId};
+                $hash->{helper}{device}{inputapps}{$devices->{appId}}   = $devices->{label};
+            }
             
             readingsBulkUpdate($hash,'extInput_'.$devices->{label},'connect_'.$devices->{connected});
         }
@@ -852,7 +844,34 @@ sub LGTV_WebOS_WriteReadings($$) {
         }
     }
     
-    elsif( defined($decode_json->{type}) ) {
+    elsif( defined($decode_json->{payload}{status3D}{status}) ) {
+        if( $decode_json->{payload}{status3D}{status} eq 'false' ) {
+        
+            readingsBulkUpdate($hash,'3D','off');
+        
+        } elsif( $decode_json->{payload}{status3D}{status} eq 'true' ) {
+        
+            readingsBulkUpdate($hash,'3D','on');
+        }
+        
+        readingsBulkUpdate($hash,'3DMode',$decode_json->{payload}{status3D}{pattern});
+    }
+
+    elsif( defined($decode_json->{payload}{appId}) ) {
+        
+        if( $decode_json->{payload}{appId} =~ /com.webos.app.externalinput/ or $decode_json->{payload}{appId} =~ /com.webos.app.hdmi/ ) {
+
+            readingsBulkUpdate($hash,'input',$hash->{helper}{device}{inputapps}{$decode_json->{payload}{appId}});
+            readingsBulkUpdate($hash,'launchApp','-');
+        
+        } else {
+
+            readingsBulkUpdate($hash,'launchApp',$openAppsPackageName{$decode_json->{payload}{appId}});
+            readingsBulkUpdate($hash,'input','-');
+        }
+    }
+    
+    if( defined($decode_json->{type}) ) {
         if( ($decode_json->{type} eq 'response' and $decode_json->{payload}{returnValue} eq 'true') or ($decode_json->{type} eq 'registered') and defined($decode_json->{payload}{'client-key'}) ) {
         
             $response = 'ok';
@@ -869,24 +888,10 @@ sub LGTV_WebOS_WriteReadings($$) {
         }
     }
     
-    elsif( defined($decode_json->{payload}{status3D}{status}) ) {
-        if( $decode_json->{payload}{status3D}{status} eq 'false' ) {
-        
-            readingsBulkUpdate($hash,'3D','off');
-        
-        } elsif( $decode_json->{payload}{status3D}{status} eq 'true' ) {
-        
-            readingsBulkUpdate($hash,'3D','on');
-        }
-        
-        readingsBulkUpdate($hash,'3DMode',$decode_json->{payload}{status3D}{pattern});
-    }
-    
     
     readingsBulkUpdate($hash,'lgKey',$decode_json->{payload}{'client-key'});
     readingsBulkUpdate($hash,'volume',$decode_json->{payload}{'volume'});
     readingsBulkUpdate($hash,'lastResponse',$response);
-    readingsBulkUpdate($hash,'launchApp',$openAppsPackageName{$decode_json->{payload}{'appId'}}) if( defined($decode_json->{payload}{'appId'}) );
     
     if( ReadingsVal($name,'launchApp','none') eq 'TV') {
     
