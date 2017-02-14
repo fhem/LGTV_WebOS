@@ -57,7 +57,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.60";
+my $version = "0.0.61";
 
 
 
@@ -305,10 +305,13 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     
     RemoveInternalTimer($hash,'LGTV_WebOS_TimerStatusRequest');
     
+    readingsBeginUpdate($hash);
+    
     if( !IsDisabled($name) and $hash->{CD} ) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - run get functions";
 
+        
         readingsBulkUpdate($hash,'state', 'on');
         readingsBulkUpdate($hash,'presence', 'present');
 
@@ -332,6 +335,8 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         readingsBulkUpdate($hash,'presence', 'absent');
     }
     
+    readingsEndUpdate($hash, 1);
+    
     LGTV_WebOS_Open($hash) if( !IsDisabled($name) and not $hash->{CD} );
     
     InternalTimer( gettimeofday()+15,"LGTV_WebOS_TimerStatusRequest", $hash, 1 );
@@ -344,12 +349,29 @@ sub LGTV_WebOS_Set($@) {
 
     my $uri;
     my %payload;
+    #my $inputs = '';
     
+    
+    #if ( defined( $hash->{helper}{device}{inputs}) and ref( $hash->{helper}{device}{inputs} ) eq "HASH" ) {
+        
+    #    foreach my $id (sort keys %{ $hash->{helper}{device}{inputs} }) {
+        
+    #        $inputs .= ',' if($id != 0);
+    #        $inputs .= $hash->{helper}{device}{inputs}{$id}{input};
+    #    }
+    #}
     
     if($cmd eq 'connect') {
         return "usage: connect" if( @args != 0 );
 
         LGTV_WebOS_Open($hash);
+
+        return undef;
+        
+    } elsif($cmd eq 'clearInputList') {
+        return "usage: clearInputList" if( @args != 0 );
+
+        delete $hash->{helper}{device}{inputs};
 
         return undef;
 
@@ -491,7 +513,7 @@ sub LGTV_WebOS_Set($@) {
 
     } else {
         my  $list = ""; 
-        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg";
+        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg";
         #$list .= "channel:" . join(' ',ReadingsVal($name,'channelName','none'));
         return "Unknown argument $cmd, choose one of $list";
     }
@@ -779,17 +801,29 @@ sub LGTV_WebOS_WriteReadings($$) {
     }
     
     elsif( ref($decode_json->{payload}{devices}) eq "ARRAY" and scalar(@{$decode_json->{payload}{devices}}) > 0 ) {
+            
+        #my $count = 0;
         foreach my $devices ( @{$decode_json->{payload}{devices}} ) {
-        
+
+            #if( not defined($hash->{helper}{device}{inputs}{$count}) ) {
+            
+            #    $hash->{helper}{device}{inputs}{$count}{input}     = $devices->{label};
+            #    $hash->{helper}{device}{inputs}{$count}{appid}     = $devices->{appId};
+            #}
+            
+            #$count++;
+            
             readingsBulkUpdate($hash,'extInput_'.$devices->{label},'connect_'.$devices->{connected});
         }
     }
     
     elsif( ref($decode_json->{payload}{programList}) eq "ARRAY" and scalar(@{$decode_json->{payload}{programList}}) > 0 ) {
+        
+        my $count = 0;
         foreach my $programList ( @{$decode_json->{payload}{programList}} ) {
         
-            readingsBulkUpdate($hash,'currentTitle',$programList->{programName});
-            return;
+            $hash->{helper}{device}{channelguide}{$count}{programname}   = $programList->{programName};
+            $count++
         }
     }
     
@@ -856,13 +890,16 @@ sub LGTV_WebOS_WriteReadings($$) {
         readingsBulkUpdate($hash,'channelId',$decode_json->{payload}{'channelNumber'});
         readingsBulkUpdate($hash,'channel',$decode_json->{payload}{'channelName'});
         readingsBulkUpdate($hash,'channelMedia',$decode_json->{payload}{'channelTypeName'});
+        readingsBulkUpdate($hash,'channelCurrentTitle',$hash->{helper}{device}{channelguide}{0}{programname});
+        readingsBulkUpdate($hash,'channelNextTitle',$hash->{helper}{device}{channelguide}{1}{programname});
     
     } else {
     
         readingsBulkUpdate($hash,'channelId','-');
         readingsBulkUpdate($hash,'channel','-');
         readingsBulkUpdate($hash,'channelMedia','-');
-        readingsBulkUpdate($hash,'currentTitle','-');
+        readingsBulkUpdate($hash,'channelCurrentTitle','-');
+        readingsBulkUpdate($hash,'channelNextTitle','-');
     }
 
     readingsEndUpdate($hash, 1);
