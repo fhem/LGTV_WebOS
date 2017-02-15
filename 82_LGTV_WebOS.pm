@@ -931,7 +931,11 @@ sub LGTV_WebOS_WriteReadings($$) {
         readingsBulkUpdate($hash,'channel','-');
         readingsBulkUpdate($hash,'channelMedia','-');
         readingsBulkUpdate($hash,'channelCurrentTitle','-');
+        readingsBulkUpdate($hash,'channelCurrentStartTime','-');
+        readingsBulkUpdate($hash,'channelCurrentEndTime','-');
         readingsBulkUpdate($hash,'channelNextTitle','-');
+        readingsBulkUpdate($hash,'channelNextStartTime','-');
+        readingsBulkUpdate($hash,'channelNextEndTime','-');
     }
 
     readingsEndUpdate($hash, 1);
