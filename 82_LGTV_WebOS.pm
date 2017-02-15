@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.65";
+my $version = "0.0.66";
 
 
 
@@ -211,11 +211,12 @@ sub LGTV_WebOS_Define($$) {
     
 
 
-    my $name            = $a[0];
-    my $host            = $a[2];
+    my $name                                = $a[0];
+    my $host                                = $a[2];
 
-    $hash->{HOST}       = $host;
-    $hash->{VERSION}    = $version;
+    $hash->{HOST}                           = $host;
+    $hash->{VERSION}                        = $version;
+    $hash->{helper}{channelguide}{counter}  = 0;
 
 
     Log3 $name, 3, "LGTV_WebOS ($name) - defined with host $host";
@@ -310,17 +311,20 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         readingsBulkUpdate($hash, 'state', 'on');
         readingsBulkUpdate($hash, 'presence', 'present');
 
-        LGTV_WebOS_GetAudioStatus($hash);
+        if($hash->{helper}{channelguide}{counter} > 5 and AttrVal($name,'channelGuide', 0) == 1 and ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {
         
-        if( ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {;
-            InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 );
-            InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetChannelProgramInfo', $hash, 0 ) if( AttrVal($name,'channelGuide', 0) == 1 );
+            InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetChannelProgramInfo', $hash, 0 );
+            $hash->{helper}{channelguide}{counter}  = 0;
+        
+        } else {
+        
+            LGTV_WebOS_GetAudioStatus($hash);
+            InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 ) if( ReadingsVal($name,'launchApp', 'TV') eq 'TV' );
+            InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetForgroundAppInfo', $hash, 0 );
+            InternalTimer( gettimeofday()+6, 'LGTV_WebOS_Get3DStatus', $hash, 0 );
+            InternalTimer( gettimeofday()+8, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
         }
-        
-        InternalTimer( gettimeofday()+8, 'LGTV_WebOS_GetForgroundAppInfo', $hash, 0 );
-        InternalTimer( gettimeofday()+10, 'LGTV_WebOS_Get3DStatus', $hash, 0 );
-        InternalTimer( gettimeofday()+12, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
-        
+    
     } elsif( IsDisabled($name) ) {
         readingsBulkUpdate($hash, 'state', 'disabled');
     
@@ -334,7 +338,8 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     
     LGTV_WebOS_Open($hash) if( !IsDisabled($name) and not $hash->{CD} );
     
-    InternalTimer( gettimeofday()+15,"LGTV_WebOS_TimerStatusRequest", $hash, 1 );
+    $hash->{helper}{channelguide}{counter}  = $hash->{helper}{channelguide}{counter} +1;
+    InternalTimer( gettimeofday()+10,"LGTV_WebOS_TimerStatusRequest", $hash, 1 );
 }
 
 sub LGTV_WebOS_Set($@) {
@@ -753,7 +758,7 @@ sub LGTV_WebOS_ResponseProcessing($$) {
         #my $json        = LGTV_WebOS_ProcessRead($hash,$response);
         my $json        = $response;
         
-        Log3 $name, 5, "LGTV_WebOS ($name) - Corrected JSON String: $json" if($json);
+        Log3 $name, 4, "LGTV_WebOS ($name) - Corrected JSON String: $json" if($json);
         
         if(not defined($json) or not ($json) ) {
         
@@ -814,8 +819,9 @@ sub LGTV_WebOS_WriteReadings($$) {
         
         my $count = 0;
         foreach my $programList ( @{$decode_json->{payload}{programList}} ) {
-        
-            $hash->{helper}{device}{channelguide}{$count}{programname}   = $programList->{programName};
+            
+            readingsBulkUpdate($hash,'channelCurrentTitle',$programList->{programName}) if($count < 1);
+            readingsBulkUpdate($hash,'channelNextTitle',$programList->{programName}) if($count < 2);
             
             $count++;
             return if($count > 1);
@@ -898,8 +904,6 @@ sub LGTV_WebOS_WriteReadings($$) {
         readingsBulkUpdate($hash,'channelId',$decode_json->{payload}{'channelNumber'});
         readingsBulkUpdate($hash,'channel',$decode_json->{payload}{'channelName'});
         readingsBulkUpdate($hash,'channelMedia',$decode_json->{payload}{'channelTypeName'});
-        readingsBulkUpdate($hash,'channelCurrentTitle',$hash->{helper}{device}{channelguide}{0}{programname});
-        readingsBulkUpdate($hash,'channelNextTitle',$hash->{helper}{device}{channelguide}{1}{programname});
     
     } else {
     
