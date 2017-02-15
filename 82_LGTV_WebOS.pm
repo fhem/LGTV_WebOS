@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.66";
+my $version = "0.0.67";
 
 
 
@@ -73,7 +73,6 @@ sub LGTV_WebOS_Header2Hash($);
 sub LGTV_WebOS_Pairing($);
 sub LGTV_WebOS_CreateSendCommand($$$;$);
 sub LGTV_WebOS_Hybi10Encode($;$$);
-sub LGTV_WebOS_PreResponseProsessing($$);
 sub LGTV_WebOS_WriteReadings($$);
 sub LGTV_WebOS_GetCurrentChannel($);
 sub LGTV_WebOS_GetForgroundAppInfo($);
@@ -754,8 +753,7 @@ sub LGTV_WebOS_ResponseProcessing($$) {
     elsif( $response =~ m/^{"type":".+}}$/ ) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - JSON detected, run LGTV_WebOS_WriteReadings";
-        #my $json        = LGTV_WebOS_PreResponseProsessing($hash,$response);
-        #my $json        = LGTV_WebOS_ProcessRead($hash,$response);
+
         my $json        = $response;
         
         Log3 $name, 4, "LGTV_WebOS ($name) - Corrected JSON String: $json" if($json);
@@ -820,8 +818,17 @@ sub LGTV_WebOS_WriteReadings($$) {
         my $count = 0;
         foreach my $programList ( @{$decode_json->{payload}{programList}} ) {
             
-            readingsBulkUpdate($hash,'channelCurrentTitle',$programList->{programName}) if($count < 1);
-            readingsBulkUpdate($hash,'channelNextTitle',$programList->{programName}) if($count < 2);
+            if($count < 1) {
+                readingsBulkUpdate($hash,'channelCurrentTitle',$programList->{programName});
+                readingsBulkUpdate($hash,'channelCurrentStartTime',LGTV_WebOS_FormartStartEndTime($programList->{localStartTime}));
+                readingsBulkUpdate($hash,'channelCurrentEndTime',LGTV_WebOS_FormartStartEndTime($programList->{localEndTime}));
+            
+            } elsif($count < 2) {
+            
+                readingsBulkUpdate($hash,'channelNextTitle',$programList->{programName});
+                readingsBulkUpdate($hash,'channelNextStartTime',LGTV_WebOS_FormartStartEndTime($programList->{localStartTime}));
+                readingsBulkUpdate($hash,'channelNextEndTime',LGTV_WebOS_FormartStartEndTime($programList->{localEndTime}));
+            }
             
             $count++;
             return if($count > 1);
@@ -1244,7 +1251,7 @@ sub LGTV_WebOS_ParseMsg($$) {
 
 sub LGTV_WebOS_Header2Hash($) {
 
-    my ( $string ) = @_;
+    my $string  = shift;
     my %hash = ();
 
     foreach my $line (split("\r\n", $string)) {
@@ -1258,42 +1265,14 @@ sub LGTV_WebOS_Header2Hash($) {
     return \%hash;
 }
 
-sub LGTV_WebOS_PreResponseProsessing($$) {
+sub LGTV_WebOS_FormartStartEndTime($) {
 
-    my ($hash,$json)    = @_;
-    my $name            = $hash->{NAME};
+    my $string      = shift;
     
     
-    Log3 $name, 4, "LGTV_WebOS ($name) - pre processing response data";
+    my @timeArray   =   split(',', $string);
     
-    my $len = length($json);
-    my @letterArray = split("",$json);
-
-    my $letter  = "";
-    my $count   = 0;
-    my $marker  = 0;
-    my $corrected_json;
-
-    for(my $i = 0; $i < $len; $i++) {
-
-        $marker     = 1 if($count > 0);
-        $letter         = $letterArray[0];
-        
-        $count++ if($letter eq '{');
-        $count-- if($letter eq '}');
-        
-        $corrected_json .= $letter if($count > 0);
-
-
-        if( $count == 0 and $marker == 1 ) {
-     
-            $marker = 0;
-            $corrected_json .= '}';
-            return $corrected_json;
-        }
-
-        shift(@letterArray);
-    }
+    return "$timeArray[0]-$timeArray[1]-$timeArray[2] $timeArray[3]:$timeArray[4]:$timeArray[5]";
 }
 
 
