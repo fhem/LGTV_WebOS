@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.67";
+my $version = "0.0.68";
 
 
 
@@ -83,6 +83,7 @@ sub LGTV_WebOS_ProcessRead($$);
 sub LGTV_WebOS_ParseMsg($$);
 sub LGTV_WebOS_Get3DStatus($);
 sub LGTV_WebOS_GetChannelProgramInfo($);
+sub LGTV_WebOS_FormartStartEndTime($);
 
 
 
@@ -117,7 +118,7 @@ my %lgCommands = (
             "closeApp"                  => ["ssap://system.launcher/close"],
             "openApp"                   => ["ssap://system.launcher/open"],
             "closeWebApp"               => ["ssap://webapp/closeWebApp"],
-            "openChannel"               => ["ssap://tv/openChannel", "channel"],
+            "openChannel"               => ["ssap://tv/openChannel", "channelNumber"],
             "openApp"                   => ["ssap://system.launcher/open"],
             "launchApp"                 => ["ssap://system.launcher/launch", "id"],
             "screenMsg"                 => ["ssap://system.notifications/createToast", "message"],
@@ -312,7 +313,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
 
         if($hash->{helper}{channelguide}{counter} > 5 and AttrVal($name,'channelGuide', 0) == 1 and ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {
         
-            InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetChannelProgramInfo', $hash, 0 );
+            LGTV_WebOS_GetChannelProgramInfo($hash);
             $hash->{helper}{channelguide}{counter}  = 0;
         
         } else {
@@ -422,20 +423,21 @@ sub LGTV_WebOS_Set($@) {
         return "usage: mute" if( @args != 1 );
 
         if($args[0] eq 'off') {
-        
-            $payload{$lgCommands{$cmd}->[1]}    = 'false';
+
+            $uri                                = $lgCommands{volumeDown}->[0];
         
         } elsif($args[0] eq 'on') {
         
             $payload{$lgCommands{$cmd}->[1]}    = 'true';
+            $uri                                = $lgCommands{$cmd}->[0];
         }
         
-        $uri                                = $lgCommands{$cmd}->[0];
+        
 
     } elsif($cmd eq 'volume') {
         return "usage: volume" if( @args != 1 );
 
-        $payload{$lgCommands{$cmd}->[1]}    = join(" ", @args);
+        $payload{$lgCommands{$cmd}->[1]}    = int(join(" ", @args));
         $uri                                = $lgCommands{$cmd}->[0];
         
     } elsif($cmd eq 'launchApp') {
@@ -524,7 +526,7 @@ sub LGTV_WebOS_Set($@) {
 
     } else {
         my  $list = ""; 
-        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg input:$inputs";
+        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume:slider,0,1,100 volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg input:$inputs openChannel";
         return "Unknown argument $cmd, choose one of $list";
     }
     
@@ -960,7 +962,7 @@ sub LGTV_WebOS_Pairing($) {
                                         "vendorId" => "com.lge",
                                         "localizedAppNames" => {
                                             "" => "FHEM LG Remote",
-                                            "de-DE" => "FHEM LG Fernbedinung"
+                                            "de-DE" => "FHEM LG Fernbedienung"
                                             },
                                         "localizedVendorNames" => {
                                             "" => "LG Electronics"
