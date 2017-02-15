@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.68";
+my $version = "0.0.69";
 
 
 
@@ -217,6 +217,7 @@ sub LGTV_WebOS_Define($$) {
     $hash->{HOST}                           = $host;
     $hash->{VERSION}                        = $version;
     $hash->{helper}{channelguide}{counter}  = 0;
+    $hash->{helper}{device}{registered}     = 0;
 
 
     Log3 $name, 3, "LGTV_WebOS ($name) - defined with host $host";
@@ -303,7 +304,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     
     readingsBeginUpdate($hash);
     
-    if( !IsDisabled($name) and $hash->{CD} ) {
+    if( !IsDisabled($name) and $hash->{CD} and $hash->{helper}{device}{registered} == 1 ) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - run get functions";
 
@@ -851,6 +852,7 @@ sub LGTV_WebOS_WriteReadings($$) {
     }
     
     elsif( defined($decode_json->{payload}{'mute'}) or defined($decode_json->{payload}{'muted'})) {
+    
         if( defined($decode_json->{payload}{'mute'}) and $decode_json->{payload}{'mute'} eq 'true' ) {
     
             readingsBulkUpdate($hash,'mute','on');
@@ -900,7 +902,12 @@ sub LGTV_WebOS_WriteReadings($$) {
     }
     
     if( defined($decode_json->{type}) ) {
-        if( ($decode_json->{type} eq 'response' and $decode_json->{payload}{returnValue} eq 'true') or ($decode_json->{type} eq 'registered') and defined($decode_json->{payload}{'client-key'}) ) {
+    
+        if( $decode_json->{type} eq 'registered' and defined($decode_json->{payload}{'client-key'}) ) {
+        
+            $hash->{helper}{device}{registered}     = 1;
+        
+        } elsif( ($decode_json->{type} eq 'response' and $decode_json->{payload}{returnValue} eq 'true') or ($decode_json->{type} eq 'registered') and defined($decode_json->{payload}{'client-key'}) ) {
         
             $response = 'ok';
             readingsBulkUpdate($hash,'pairing','paired');
