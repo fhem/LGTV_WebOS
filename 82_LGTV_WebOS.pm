@@ -331,6 +331,16 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     
         readingsBulkUpdate($hash, 'state', 'off');
         readingsBulkUpdate($hash, 'presence', 'absent');
+        
+        readingsBulkUpdate($hash,'channel','-');
+        readingsBulkUpdate($hash,'channelId','-');
+        readingsBulkUpdate($hash,'channelMedia','-');
+        readingsBulkUpdate($hash,'channelCurrentTitle','-');
+        readingsBulkUpdate($hash,'channelCurrentStartTime','-');
+        readingsBulkUpdate($hash,'channelCurrentEndTime','-');
+        readingsBulkUpdate($hash,'channelNextTitle','-');
+        readingsBulkUpdate($hash,'channelNextStartTime','-');
+        readingsBulkUpdate($hash,'channelNextEndTime','-');
     }
     
     readingsEndUpdate($hash, 1);
@@ -564,7 +574,10 @@ sub LGTV_WebOS_Close($) {
     delete($hash->{CD});
     delete($selectlist{$name});
     
-    readingsSingleUpdate($hash, 'state', 'off', 1 );
+    readingsBeginUpdate($hash);
+    readingsBulkUpdate($hash, 'state', 'off',);
+    readingsBulkUpdate($hash, 'presence', 'absent');
+    readingsEndUpdate($hash, 1);
     
     Log3 $name, 4, "LGTV_WebOS ($name) - Socket Disconnected";
 }
