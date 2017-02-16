@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.77";
+my $version = "0.0.78";
 
 
 
@@ -353,7 +353,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     LGTV_WebOS_Open($hash) if( !IsDisabled($name) and not $hash->{CD} );
     
     $hash->{helper}{device}{channelguide}{counter}  = $hash->{helper}{device}{channelguide}{counter} +1;
-    InternalTimer( gettimeofday()+12,"LGTV_WebOS_TimerStatusRequest", $hash, 1 );
+    InternalTimer( gettimeofday()+10,"LGTV_WebOS_TimerStatusRequest", $hash, 1 );
 }
 
 sub LGTV_WebOS_Set($@) {
@@ -693,6 +693,8 @@ sub LGTV_WebOS_ProcessRead($$) {
         Log3 $name, 5, "LGTV_WebOS ($name) - Nach Sub: Laenge JSON: " . length($json) . " Content: " . $json . " Tail: " . $tail;
     }
     
+    delete $hash->{PARTIAL}
+    if(length($tail) > 30000);
     $hash->{PARTIAL} = $tail;
     
     
@@ -772,7 +774,7 @@ sub LGTV_WebOS_ResponseProcessing($$) {
     
     elsif( $response =~ m/^{"type":".+}}$/ ) {
     
-        return Log3 $name, 3, "LGTV_WebOS ($name) - garbage after JSON object"
+        return Log3 $name, 4, "LGTV_WebOS ($name) - garbage after JSON object"
         if($response =~ m/^{"type":".+}}.+{"type":".+/);
     
         Log3 $name, 4, "LGTV_WebOS ($name) - JSON detected, run LGTV_WebOS_WriteReadings";
