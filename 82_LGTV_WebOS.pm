@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.78";
+my $version = "0.1.0";
 
 
 
@@ -118,7 +118,7 @@ my %lgCommands = (
             "closeApp"                  => ["ssap://system.launcher/close"],
             "openApp"                   => ["ssap://system.launcher/open"],
             "closeWebApp"               => ["ssap://webapp/closeWebApp"],
-            "openChannel"               => ["ssap://tv/openChannel", "channelId"],
+            "openChannel"               => ["ssap://tv/openChannel", "channelNumber"],
             "launchApp"                 => ["ssap://system.launcher/launch", "id"],
             "screenMsg"                 => ["ssap://system.notifications/createToast", "message"],
             "mute"                      => ["ssap://audio/setMute", "mute"],
@@ -336,7 +336,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         readingsBulkUpdate($hash, 'presence', 'absent');
         
         readingsBulkUpdate($hash,'channel','-');
-        readingsBulkUpdate($hash,'channelId','-');
+        readingsBulkUpdate($hash,'channelName','-');
         readingsBulkUpdate($hash,'channelMedia','-');
         readingsBulkUpdate($hash,'channelCurrentTitle','-');
         readingsBulkUpdate($hash,'channelCurrentStartTime','-');
@@ -633,19 +633,19 @@ sub LGTV_WebOS_Read($) {
         $buf =~ /({"type":".+}}$)/;
         $buf = $1;
         
-        Log3 $name, 5, "LGTV_WebOS ($name) - received correct JSON string, start response processing: $buf";
+        Log3 $name, 4, "LGTV_WebOS ($name) - received correct JSON string, start response processing: $buf";
         LGTV_WebOS_ResponseProcessing($hash,$buf);
         #return;
         
     } elsif( $buf =~ /HTTP\/1.1 101 Switching Protocols/ ) {
     
-        Log3 $name, 5, "LGTV_WebOS ($name) - received HTTP data string, start response processing: $buf";
+        Log3 $name, 4, "LGTV_WebOS ($name) - received HTTP data string, start response processing: $buf";
         LGTV_WebOS_ResponseProcessing($hash,$buf);
         #return;
         
     } else {
     
-        Log3 $name, 5, "LGTV_WebOS ($name) - coruppted data found, run LGTV_WebOS_ProcessRead: $buf";
+        Log3 $name, 4, "LGTV_WebOS ($name) - coruppted data found, run LGTV_WebOS_ProcessRead: $buf";
         LGTV_WebOS_ProcessRead($hash,$buf);
     }
 }
@@ -696,7 +696,7 @@ sub LGTV_WebOS_ProcessRead($$) {
     delete $hash->{PARTIAL}
     if(length($tail) > 30000);
     $hash->{PARTIAL} = $tail;
-    
+    Log3 $name, 4, "LGTV_WebOS ($name) - PARTIAL lenght: " . length($tail);
     
     Log3 $name, 5, "LGTV_WebOS ($name) - Tail: " . $tail;
     Log3 $name, 5, "LGTV_WebOS ($name) - PARTIAL: " . $hash->{PARTIAL};
@@ -942,14 +942,13 @@ sub LGTV_WebOS_WriteReadings($$) {
     
     if( ReadingsVal($name,'launchApp','none') eq 'TV') {
     
-        readingsBulkUpdate($hash,'channelId',$decode_json->{payload}{'channelNumber'});
-        readingsBulkUpdate($hash,'channel',$decode_json->{payload}{'channelName'});
-        #readingsBulkUpdate($hash,'.openChannel',$decode_json->{payload}{'channelName'});
+        readingsBulkUpdate($hash,'channel',$decode_json->{payload}{'channelNumber'});
+        readingsBulkUpdate($hash,'channelName',$decode_json->{payload}{'channelName'});
         readingsBulkUpdate($hash,'channelMedia',$decode_json->{payload}{'channelTypeName'});
     
     } else {
     
-        readingsBulkUpdate($hash,'channelId','-');
+        readingsBulkUpdate($hash,'channelName','-');
         readingsBulkUpdate($hash,'channel','-');
         readingsBulkUpdate($hash,'channelMedia','-');
         readingsBulkUpdate($hash,'channelCurrentTitle','-');
