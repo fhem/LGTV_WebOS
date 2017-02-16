@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.73";
+my $version = "0.0.74";
 
 
 
@@ -328,6 +328,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     
     } elsif( IsDisabled($name) ) {
         readingsBulkUpdate($hash, 'state', 'disabled');
+        $hash->{helper}{device}{runsetcmd}              = 0;
     
     } else {
     
@@ -343,6 +344,8 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         readingsBulkUpdate($hash,'channelNextTitle','-');
         readingsBulkUpdate($hash,'channelNextStartTime','-');
         readingsBulkUpdate($hash,'channelNextEndTime','-');
+        
+        $hash->{helper}{device}{runsetcmd}              = 0;
     }
     
     readingsEndUpdate($hash, 1);
@@ -472,11 +475,11 @@ sub LGTV_WebOS_Set($@) {
 
         $uri                                = $lgCommands{$cmd}->[0];
         
-    } elsif($cmd eq 'openChannel') {
-        return "usage: openChannel" if( @args != 1 );
+    } elsif($cmd eq 'channel') {
+        return "usage: channel" if( @args != 1 );
 
-        $payload{$lgCommands{$cmd}->[1]}    = join(" ", @args);
-        $uri                                = $lgCommands{$cmd}->[0];
+        $payload{$lgCommands{openChannel}->[1]}    = join(" ", @args);
+        $uri                                = $lgCommands{openChannel}->[0];
         
     } elsif($cmd eq 'getServiceList') {
         return "usage: getServiceList" if( @args != 0 );
@@ -525,7 +528,7 @@ sub LGTV_WebOS_Set($@) {
 
     } else {
         my  $list = ""; 
-        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume:slider,0,1,100 volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg input:$inputs openChannel";
+        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume:slider,0,1,100 volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg input:$inputs channel";
         return "Unknown argument $cmd, choose one of $list";
     }
     
@@ -936,6 +939,7 @@ sub LGTV_WebOS_WriteReadings($$) {
     
         readingsBulkUpdate($hash,'channelId',$decode_json->{payload}{'channelNumber'});
         readingsBulkUpdate($hash,'channel',$decode_json->{payload}{'channelName'});
+        #readingsBulkUpdate($hash,'.openChannel',$decode_json->{payload}{'channelName'});
         readingsBulkUpdate($hash,'channelMedia',$decode_json->{payload}{'channelTypeName'});
     
     } else {
