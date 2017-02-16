@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.75";
+my $version = "0.0.76";
 
 
 
@@ -771,6 +771,9 @@ sub LGTV_WebOS_ResponseProcessing($$) {
     
     
     elsif( $response =~ m/^{"type":".+}}$/ ) {
+    
+        return Log3 $name, 3, "LGTV_WebOS ($name) - garbage after JSON object"
+        if($response =~ m/^{"type":".+}}.+{"type":".+/);
     
         Log3 $name, 4, "LGTV_WebOS ($name) - JSON detected, run LGTV_WebOS_WriteReadings";
 
