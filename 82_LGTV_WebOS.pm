@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.0.74";
+my $version = "0.0.75";
 
 
 
@@ -312,10 +312,10 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         readingsBulkUpdate($hash, 'state', 'on');
         readingsBulkUpdate($hash, 'presence', 'present');
 
-        if($hash->{helper}{channelguide}{counter} > 2 and AttrVal($name,'channelGuide', 0) == 1 and ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {
+        if($hash->{helper}{device}{channelguide}{counter} > 2 and AttrVal($name,'channelGuide', 0) == 1 and ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {
         
             LGTV_WebOS_GetChannelProgramInfo($hash);
-            $hash->{helper}{channelguide}{counter}  = 0;
+            $hash->{helper}{device}{channelguide}{counter}  = 0;
         
         } else {
         
@@ -352,7 +352,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     
     LGTV_WebOS_Open($hash) if( !IsDisabled($name) and not $hash->{CD} );
     
-    $hash->{helper}{channelguide}{counter}  = $hash->{helper}{channelguide}{counter} +1;
+    $hash->{helper}{device}{channelguide}{counter}  = $hash->{helper}{device}{channelguide}{counter} +1;
     InternalTimer( gettimeofday()+10,"LGTV_WebOS_TimerStatusRequest", $hash, 1 );
 }
 
