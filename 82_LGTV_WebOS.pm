@@ -693,10 +693,12 @@ sub LGTV_WebOS_ProcessRead($$) {
         Log3 $name, 5, "LGTV_WebOS ($name) - Nach Sub: Laenge JSON: " . length($json) . " Content: " . $json . " Tail: " . $tail;
     }
     
-    delete $hash->{PARTIAL}
+    
+    $tail = ''
     if(length($tail) > 30000);
     $hash->{PARTIAL} = $tail;
     Log3 $name, 4, "LGTV_WebOS ($name) - PARTIAL lenght: " . length($tail);
+    
     
     Log3 $name, 5, "LGTV_WebOS ($name) - Tail: " . $tail;
     Log3 $name, 5, "LGTV_WebOS ($name) - PARTIAL: " . $hash->{PARTIAL};
