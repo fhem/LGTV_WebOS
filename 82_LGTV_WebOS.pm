@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.1.0";
+my $version = "0.1.1";
 
 
 
@@ -401,7 +401,6 @@ sub LGTV_WebOS_Set($@) {
         return "usage: screenMsg <message>" if( @args < 1 );
 
         my $msg = join(" ", @args);
-        #$msg =~ s/ä/u/g;
         $payload{$lgCommands{$cmd}->[1]}    = $msg;
         $uri                                = $lgCommands{$cmd}->[0];
         
@@ -635,13 +634,11 @@ sub LGTV_WebOS_Read($) {
         
         Log3 $name, 4, "LGTV_WebOS ($name) - received correct JSON string, start response processing: $buf";
         LGTV_WebOS_ResponseProcessing($hash,$buf);
-        #return;
         
     } elsif( $buf =~ /HTTP\/1.1 101 Switching Protocols/ ) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - received HTTP data string, start response processing: $buf";
         LGTV_WebOS_ResponseProcessing($hash,$buf);
-        #return;
         
     } else {
     
@@ -669,14 +666,14 @@ sub LGTV_WebOS_ProcessRead($$) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - No PARTIAL buffer";
     }
-  
+
     Log3 $name, 5, "LGTV_WebOS ($name) - Incoming data: " . $data;
-  
+
     $buffer = $buffer  . $data;
     Log3 $name, 5, "LGTV_WebOS ($name) - Current processing buffer (PARTIAL + incoming data): " . $buffer;
 
     my ($json,$tail) = LGTV_WebOS_ParseMsg($hash, $buffer);
-    
+
 
     while($json) {
     
@@ -692,8 +689,8 @@ sub LGTV_WebOS_ProcessRead($$) {
         
         Log3 $name, 5, "LGTV_WebOS ($name) - Nach Sub: Laenge JSON: " . length($json) . " Content: " . $json . " Tail: " . $tail;
     }
-    
-    
+
+
     $tail = ''
     if(length($tail) > 30000);
     $hash->{PARTIAL} = $tail;
@@ -844,8 +841,9 @@ sub LGTV_WebOS_WriteReadings($$) {
         
         my $count = 0;
         foreach my $programList ( @{$decode_json->{payload}{programList}} ) {
-            
+        
             if($count < 1) {
+            
                 readingsBulkUpdate($hash,'channelCurrentTitle',$programList->{programName});
                 readingsBulkUpdate($hash,'channelCurrentStartTime',LGTV_WebOS_FormartStartEndTime($programList->{localStartTime}));
                 readingsBulkUpdate($hash,'channelCurrentEndTime',LGTV_WebOS_FormartStartEndTime($programList->{localEndTime}));
@@ -1333,3 +1331,132 @@ sub LGTV_WebOS_FormartStartEndTime($) {
 
 
 1;
+
+
+=pod
+=item device
+=item summary       Controls LG SmartTVs run with WebOS Operating System (in beta phase)
+=item summary_DE    Steuert LG SmartTVs mit WebOS Betriebssystem (derzeit Beta Status)
+
+=begin html
+
+<a name="LGTV_WebOS"></a>
+<h3>LGTV_WebOS</h3>
+
+=end html
+
+=begin html_DE
+
+<a name="LGTV_WebOS"></a>
+<h3>LGTV_WebOS</h3>
+<ul>
+    <ul>
+        Dieses Modul steuert SmartTV's des Herstellers LG mit dem Betriebssystem WebOS &uuml;ber die Netzwerkschnittstelle. Es bietet die M&ouml;glichkeit den aktuellen TV Kanal zu steuern, sowie Apps zu starten, Fernbedienungsbefehle zu senden, sowie den aktuellen Status abzufragen.
+    </ul>
+    <p><br /><br /><strong>Definition </strong><code>define &lt;name&gt; LGTV_WebOS &lt;IP-Addresse&gt; <br /><br />
+    <ul>
+        <ul>
+            <ul>Bei der Definition eines LGTV_WebOS-Moduls wird eine interne Routine in Gang gesetzt, welche regelm&auml;&szlig;ig alle 15s den Status des TV abfragt und entsprechende Notify-/FileLog-Definitionen triggert.</ul>
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <ul>Beispiel: <code>define TV LGTV_WebOS 192.168.0.10 <br /></code><br /><br /></ul>
+        </ul>
+    </ul>
+    <strong>Set-Kommandos </strong><code>set &lt;Name&gt; &lt;Kommando&gt; [&lt;Parameter&gt;]</code>
+    <ul>
+        <ul>
+            <ul>Aktuell werden folgende Kommandos unterst&uuml;tzt.</ul>
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <ul>
+                <ul>
+                    <li><strong>connect&nbsp;</strong> -&nbsp; Verbindet sich zum Fernseher unter der IP wie definiert, f&uuml;hrt beim ersten mal automatisch ein pairing durch</li>
+                    <li><strong>pairing&nbsp;</strong> -&nbsp;&nbsp; Berechtigungsanfrage an den Fernseher, hier muss die Anfrage mit der Fernbedienung best&auml;tigt werden</li>
+                    <li><strong>screenMsg</strong> &lt;Text&gt;&nbsp;&nbsp;-&nbsp;&nbsp; zeigt f&uuml;r ca 3-5s eine Nachricht auf dem Fernseher oben rechts an</li>
+                    <li><strong>mute</strong> on, off&nbsp; -&nbsp; Schaltet den Fernseher Stumm, je nach Anschluss des Audiosignals, muss dieses am Verst&auml;rker (AV Receiver) geschehen (siehe Volume)</li>
+                    <li><strong>volume </strong>0-100, Schieberegler&nbsp; -&nbsp;&nbsp; Setzt die Lautst&auml;rke des Fernsehers, je nach Anschluss des Audiosignals, muss dieses am Verst&auml;rker (AV Receiver) geschehen (siehe mute)</li>
+                    <li><strong>volumeUp</strong>&nbsp; -&nbsp;&nbsp; Erh&ouml;ht die Lautst&auml;rke um den Wert 1</li>
+                    <li><strong>volumeDown</strong>&nbsp; -&nbsp;&nbsp; Verringert die Lautst&auml;rke um den Wert 1</li>
+                    <li><strong>channelUp</strong> &nbsp;&nbsp;-&nbsp;&nbsp; Schaltet auf den n&auml;chsten Kanal um</li>
+                    <li><strong>channelDown</strong> &nbsp;&nbsp;-&nbsp;&nbsp; Schaltet auf den vorherigen Kanal um</li>
+                    <li><strong>getServiceList&nbsp;</strong> -&nbsp; Fragrt die Laufenden Dienste des Fernsehers an (derzeit noch in Beta-Phase)</li>
+                    <li><strong>on</strong>&nbsp; -&nbsp;&nbsp; Schaltet den Fernseher ein, wenn WLAN oder LAN ebenfalls im Aus-Zustand aktiv ist (siehe Bedienungsanleitung da Typabh&auml;ngig)</li>
+                    <li><strong>off</strong> - Schaltet den Fernseher aus, wenn eine Connection aktiv ist</li>
+                    <li><strong>launchApp</strong> &lt;Anwendung&gt;&nbsp;&nbsp;-&nbsp;&nbsp; Aktiviert eine Anwendung aus der Liste (Maxdome, AmazonVideo, YouTube, Netflix, TV, GooglePlay, Browser, Chili, TVCast, Smartshare, Scheduler, Miracast, TV)&nbsp; <br />Achtung: TV ist hier eine Anwendung, und kein Ger&auml;teeingang</li>
+                    <li><strong>3D</strong> on,off&nbsp; -&nbsp; 3D Modus kann hier ein- und ausgeschaltet werden, je nach Fernseher k&ouml;nnen mehrere 3D Modi unterst&uuml;tzt werden (z.B. Side-by-Side, Top-Bottom)</li>
+                    <li><strong>stop</strong>&nbsp; -&nbsp;&nbsp; Stop-Befehl (anwendungsabh&auml;ngig)</li>
+                    <li><strong>play&nbsp; </strong>-&nbsp;&nbsp; Play-Befehl (anwendungsabh&auml;ngig)</li>
+                    <li><strong>pause&nbsp; </strong>-&nbsp;&nbsp; Pause-Befehl (anwendungsabh&auml;ngig)</li>
+                    <li><strong>rewind&nbsp; </strong>-&nbsp;&nbsp; Zur&uuml;ckspulen-Befehl (anwendungsabh&auml;ngig)</li>
+                    <li><strong>fastForward&nbsp; </strong>-&nbsp;&nbsp; Schneller-Vorlauf-Befehl (anwendungsabh&auml;ngig)</li>
+                    <li><strong>clearInputList&nbsp;</strong> -&nbsp;&nbsp; L&ouml;scht die Liste der Ger&auml;teeing&auml;nge</li>
+                    <li><strong>input&nbsp;</strong> - W&auml;hlt den Ger&auml;teeingang aus (Abh&auml;ngig von Typ und angeschossenen Ger&auml;ten) <br />Beispiele: extInput_AV-1, extInput_HDMI-1, extInput_HDMI-2, extInput_HDMI-3)</li>
+                </ul>
+            </ul>
+        </ul>
+    </ul>
+    <p><strong>Get-Kommandos</strong> <code>get &lt;Name&gt; &lt;Readingname&gt;</code><br /><br /></p>
+    <ul>
+        <ul>
+            <ul>Aktuell stehen via GET lediglich die Werte der Readings zur Verf&uuml;gung. Eine genaue Auflistung aller m&ouml;glichen Readings folgen unter "Generierte Readings/Events".</ul>
+        </ul>
+    </ul>
+    <p><br /><br /><strong>Attribute</strong></p>
+    <ul>
+        <ul>
+            <ul>
+                <li>disable</li>
+                Optionales Attribut zur Deaktivierung des zyklischen Status-Updates. Ein manuelles Update via statusRequest-Befehl ist dennoch m&ouml;glich.
+            </ul>
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <ul>M&ouml;gliche Werte: 0 =&gt; zyklische Status-Updates, 1 =&gt; keine zyklischen Status-Updates.</ul>
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <ul>
+                <li>channelGuide</li>
+                Optionales Attribut zur Deaktivierung der zyklischen Updates des TV-Guides, dieses beansprucht je nach Hardware einigen Netzwerkverkehr und Prozessorlast
+            </ul>
+        </ul>
+    </ul>
+    <ul>
+        <ul>M&ouml;gliche Werte: 0 =&gt; keine zyklischen TV-Guide-Updates, 1 =&gt; zyklische TV-Guide-Updates</ul>
+    </ul>
+    <p><br /><br /><strong>Generierte Readings/Events:</strong></p>
+    <ul>
+        <ul>
+            <li><strong>3D</strong> - Status des 3D-Wiedergabemodus ("on" =&gt; 3D Wiedergabemodus aktiv, "off" =&gt; 3D Wiedergabemodus nicht aktiv)</li>
+            <li><strong>3DMode</strong> - Anzeigemodus (2d, 2dto3d, side_side_half, line_interleave_half, column_interleave, check_board)</li>
+            <li><strong>channel</strong> - Die Nummer des aktuellen TV-Kanals</li>
+            <li><strong>channelName</strong> - Der Name des aktuellen TV-Kanals</li>
+            <li><strong>channelMedia</strong> - Senderinformation</li>
+            <li><strong>channelCurrentEndTime </strong>- Ende der laufenden Sendung (Beta)</li>
+            <li><strong>channelCurrentStartTime </strong>- Start der laufenden Sendung (Beta)</li>
+            <li><strong>channelCurrentTitle</strong> - Der Name der laufenden Sendung (Beta)</li>
+            <li><strong>channelNextEndTime </strong>- Ende der n&auml;chsten Sendung (Beta)</li>
+            <li><strong>channelNextStartTime </strong>- Start der n&auml;chsten Sendung (Beta)</li>
+            <li><strong>channelNextTitle</strong> - Der Name der n&auml;chsten Sendung (Beta)</li>
+            <li><strong>extInput_&lt;Ger&auml;teeingang</strong>&gt; - Status der Eingangsquelle (connect_true, connect_false)</li>
+            <li><strong>input</strong> - Derzeit aktiver Ger&auml;teeingang</li>
+            <li><strong>lastResponse </strong>- Status der letzten Anfrage (ok, error &lt;Fehlertext&gt;)</li>
+            <li><strong>launchApp</strong> &lt;Anwendung&gt; - Gegenw&auml;rtige aktive Anwendung</li>
+            <li><strong>lgKey</strong> - Der Client-Key, der f&uuml;r die Verbindung verwendet wird</li>
+            <li><strong>mute</strong> on,off - Der aktuelle Stumm-Status ("on" =&gt; Stumm, "off" =&gt; Laut)</li>
+            <li><strong>pairing</strong> paired, unpaired - Der Status des Pairing</li>
+            <li><strong>presence </strong>absent, present - Der aktuelle Power-Status ("present" =&gt; eingeschaltet, "absent" =&gt; ausgeschaltet)</li>
+            <li><strong>state</strong> on, off - Status des Fernsehers (&auml;hnlich presence)</li>
+            <li><strong>volume</strong> - Der aktuelle Lautst&auml;rkepegel -1, 0-100 (-1 invalider Wert)</li>
+        </ul>
+    </ul>
+</ul>
+=end html_DE
+
+=cut
