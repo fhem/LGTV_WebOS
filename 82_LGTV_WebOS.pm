@@ -51,7 +51,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.1.1";
+my $version = "0.1.3";
 
 
 
@@ -1343,6 +1343,81 @@ sub LGTV_WebOS_FormartStartEndTime($) {
 <a name="LGTV_WebOS"></a>
 <h3>LGTV_WebOS</h3>
 
+<ul>
+    This module controls SmartTVs from LG based on WebOS as operation system via network. It offers to swtich the TV channel, start and switch applications, send remote control commands, as well as to query the actual status.<p><br /><br />
+    
+    <strong>Definition </strong><code>define &lt;name&gt; LGTV_WebOS &lt;IP-Address&gt;</code>
+    </p>
+    <ul>
+        <ul>
+            When an LGTV_WebOS-Module is defined, an internal routine is triggered which queries the TV's status every 15s and triggers respective Notify / FileLog Event definitions.
+        </ul>
+    </ul>
+    </p>
+    <ul>
+        <ul>
+            Example:
+        </ul>
+        <ul>
+            <code>define TV LGTV_WebOS 192.168.0.10 <br /></code><br /><br /></p>
+        </ul>
+    </ul>
+        <p><code><strong>Set-Commands </strong><code>set &lt;Name&gt; &lt;Command&gt; [&lt;Parameter&gt;]</code></code></p>
+    <ul>
+        <ul>
+            The following commands are supported in the actual version:
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <ul>
+                <li><strong>connect&nbsp;</strong> -&nbsp; Connects to the TV at the defined address. When triggered the first time, a pairing is conducted</li>
+                <li><strong>pairing&nbsp;</strong> -&nbsp;&nbsp; Sends a pairing request to the TV which needs to be confirmed by the user with remote control</li>
+                <li><strong>screenMsg</strong> &lt;Text&gt;&nbsp;&nbsp;-&nbsp;&nbsp; Displays a message for 3-5s on the TV in the top right corner of the screen</li>
+                <li><strong>mute</strong> on, off&nbsp; -&nbsp; Turns volume to mute. Depending on the audio connection, this needs to be set on the AV Receiver (see volume) </li>
+                <li><strong>volume </strong>0-100, Slider -&nbsp;&nbsp; Sets the volume. Depending on the audio connection, this needs to be set on the AV Receiver (see mute)</li>
+                <li><strong>volumeUp</strong>&nbsp; -&nbsp;&nbsp; Increases the volume by 1</li>
+                <li><strong>volumeDown</strong>&nbsp; -&nbsp;&nbsp; Decreases the volume by 1</li>
+                <li><strong>channelUp</strong> &nbsp;&nbsp;-&nbsp;&nbsp; Switches the channel to the next one</li>
+                <li><strong>channelDown</strong> &nbsp;&nbsp;-&nbsp;&nbsp; Switches the channel to the previous one</li>
+                <li><strong>getServiceList&nbsp;</strong> -&nbsp; Queries the running services on WebOS (in beta phase)</li>
+                <li><strong>on</strong> - Turns the TV on, depending on type of device. Only working when LAN or Wifi connection remains active during off state.</li>
+                <li><strong>off</strong> - Turns the TV off, when an active connection is established</li>
+                <li><strong>launchApp</strong> &lt;Application&gt;&nbsp;&nbsp;-&nbsp;&nbsp; Activates an application out of the following list (Maxdome, AmazonVideo, YouTube, Netflix, TV, GooglePlay, Browser, Chili, TVCast, Smartshare, Scheduler, Miracast, TV)&nbsp; <br />Note: TV is an application in LG's terms and not an input connection</li>
+                <li><strong>3D</strong> on,off&nbsp; -&nbsp; 3D Mode is turned on and off. Depending on type of TV there might be different modes (e.g. Side-by-Side, Top-Bottom)</li>
+                <li><strong>stop</strong>&nbsp; -&nbsp;&nbsp; Stop command (depending on application)</li>
+                <li><strong>play&nbsp; </strong>-&nbsp;&nbsp; Play command (depending on application)</li>
+                <li><strong>pause&nbsp; </strong>-&nbsp;&nbsp; Pause command (depending on application)</li>
+                <li><strong>rewind&nbsp; </strong>-&nbsp;&nbsp; Rewind command (depending on application)</li>
+                <li><strong>fastForward&nbsp; </strong>-&nbsp;&nbsp; Fast Forward command (depending on application)</li>
+                <li><strong>clearInputList&nbsp;</strong> -&nbsp;&nbsp; Clears list of Inputs</li>
+                <li><strong>input&nbsp;</strong> - Selects the input connection (depending on the actual TV type and connected devices) <br />e.g.: extInput_AV-1, extInput_HDMI-1, extInput_HDMI-2, extInput_HDMI-3)</li>
+            </ul>
+        </ul>
+    </ul><br /><br /></p>
+        <p><strong>Get-Command</strong> <code>get &lt;Name&gt; &lt;Readingname&gt;</code><br /></p>
+    <ul>
+        <ul>
+            Currently, GET reads back the values of the current readings. Please see below for a list of Readings / Generated Events.
+        </ul>
+    </ul>
+    <p><br /><strong>Attributes</strong></p>
+    <ul>
+        <ul>
+            <li>disable</li>
+            Optional attribute to deactivate the recurring status updates. Manual trigger of update is alsways possible.</br>
+            Valid Values: 0 =&gt; recurring status updates, 1 =&gt; no recurring status updates.</p>
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <li>channelGuide</li>
+            Optional attribute to deactivate the recurring TV Guide update. Depending on TV and FHEM host, this causes significant network traffic and / or CPU load</br>
+            Valid Values: 0 =&gt; no recurring TV Guide updates, 1 =&gt; recurring TV Guide updates.
+        </ul>
+    </ul>
+</ul>
+
 =end html
 
 =begin html_DE
@@ -1353,7 +1428,7 @@ sub LGTV_WebOS_FormartStartEndTime($) {
     <ul>
         Dieses Modul steuert SmartTV's des Herstellers LG mit dem Betriebssystem WebOS &uuml;ber die Netzwerkschnittstelle. Es bietet die M&ouml;glichkeit den aktuellen TV Kanal zu steuern, sowie Apps zu starten, Fernbedienungsbefehle zu senden, sowie den aktuellen Status abzufragen.
     </ul>
-    <p><br /><br /><strong>Definition </strong><code>define &lt;name&gt; LGTV_WebOS &lt;IP-Addresse&gt; <br /><br />
+    <p><br /><br /><strong>Definition </strong><code>define &lt;name&gt; LGTV_WebOS &lt;IP-Addresse&gt;</code> <br /><br /></p>
     <ul>
         <ul>
             <ul>Bei der Definition eines LGTV_WebOS-Moduls wird eine interne Routine in Gang gesetzt, welche regelm&auml;&szlig;ig alle 15s den Status des TV abfragt und entsprechende Notify-/FileLog-Definitionen triggert.</ul>
