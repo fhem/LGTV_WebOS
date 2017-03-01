@@ -6,7 +6,7 @@
 #  All rights reserved
 #
 #   Special thanks goes to comitters:
-#       - Vitolinker
+#       - Vitolinker / Commandref
 #
 #
 #  This script is free software; you can redistribute it and/or modify
@@ -55,7 +55,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.1.3";
+my $version = "0.2.0";
 
 
 
@@ -1507,7 +1507,9 @@ sub LGTV_WebOS_FormartStartEndTime($) {
         </ul>
     </ul>
     <ul>
-        <ul>M&ouml;gliche Werte: 0 =&gt; keine zyklischen TV-Guide-Updates, 1 =&gt; zyklische TV-Guide-Updates</ul>
+        <ul>
+            <ul>M&ouml;gliche Werte: 0 =&gt; keine zyklischen TV-Guide-Updates, 1 =&gt; zyklische TV-Guide-Updates</ul>
+        </ul>
     </ul>
     <p><br /><br /><strong>Generierte Readings/Events:</strong></p>
     <ul>
