@@ -1339,21 +1339,21 @@ sub LGTV_WebOS_Presence($) {
 
     my $hash    = shift;
     
-    my $name    = $hash-{NAME};
+    my $name    = $hash->{NAME};
     my $temp;
 
     
-    $temp = qx(ping -c 1 -w 1 $hash->{$HOST} 2>&1);
+    $temp = qx(ping -c 1 -w 1 $hash->{HOST} 2>&1);
 
     if(defined($temp) and $temp ne "") {
     
         chomp $temp;
         Log3 $name, 5, "PRESENCE ($name) - ping command returned with output:\n$temp";
-        $return (($temp =~ /\d+ [Bb]ytes (from|von)/ and not $temp =~ /[Uu]nreachable/) ? "present" : "absent");
+        return (($temp =~ /\d+ [Bb]ytes (from|von)/ and not $temp =~ /[Uu]nreachable/) ? "present" : "absent");
     
     } else {
     
-        $return 'Could not execute ping command';
+        return 'Could not execute ping command';
     }
 }
 
