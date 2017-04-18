@@ -195,7 +195,7 @@ sub LGTV_WebOS_Initialize($) {
     $hash->{AttrFn}     = "LGTV_WebOS_Attr";
     $hash->{AttrList}   = "disable:1 ".
                           "channelGuide:1 ".
-                          "presence:1 ".
+                          "pingPresence:1 ".
                           $readingFnAttributes;
 
 
@@ -231,7 +231,7 @@ sub LGTV_WebOS_Define($$) {
 
     $attr{$name}{devStateIcon} = 'on:10px-kreis-gruen:off off:10px-kreis-rot:on' if( !defined( $attr{$name}{devStateIcon} ) );
     $attr{$name}{room} = 'LGTV' if( !defined( $attr{$name}{room} ) );
-    CommandDeleteReading(undef,$name . ' presence') if( AttrVal($name,'presence', 0) == 0 );
+    CommandDeleteReading(undef,$name . ' presence') if( AttrVal($name,'pingPresence', 0) == 0 );
     
     readingsSingleUpdate($hash,'state','off', 1);
     
@@ -318,7 +318,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
 
         
         readingsBulkUpdate($hash, 'state', 'on');
-        readingsBulkUpdate($hash, 'presence', LGTV_WebOS_Presence($hash)) if( AttrVal($name,'presence', 0) == 1 );
+        readingsBulkUpdate($hash, 'presence', LGTV_WebOS_Presence($hash)) if( AttrVal($name,'pingPresence', 0) == 1 );
 
         if($hash->{helper}{device}{channelguide}{counter} > 2 and AttrVal($name,'channelGuide', 0) == 1 and ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {
         
@@ -341,7 +341,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     } else {
     
         readingsBulkUpdate($hash, 'state', 'off');
-        readingsBulkUpdate($hash, 'presence', LGTV_WebOS_Presence($hash)) if( AttrVal($name,'presence', 0) == 1 );
+        readingsBulkUpdate($hash, 'presence', LGTV_WebOS_Presence($hash)) if( AttrVal($name,'pingPresence', 0) == 1 );
         
         readingsBulkUpdate($hash,'channel','-');
         readingsBulkUpdate($hash,'channelName','-');
