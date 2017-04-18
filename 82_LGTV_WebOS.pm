@@ -55,7 +55,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.2.1";
+my $version = "0.2.1.3";
 
 
 
@@ -89,6 +89,9 @@ sub LGTV_WebOS_Get3DStatus($);
 sub LGTV_WebOS_GetChannelProgramInfo($);
 sub LGTV_WebOS_FormartStartEndTime($);
 sub LGTV_WebOS_Presence($);
+sub LGTV_WebOS_PresenceRun($);
+sub LGTV_WebOS_PresenceDone($);
+sub LGTV_WebOS_PresenceAborted($);
 
 
 
@@ -318,8 +321,8 @@ sub LGTV_WebOS_TimerStatusRequest($) {
 
         
         readingsBulkUpdate($hash, 'state', 'on');
-        readingsBulkUpdate($hash, 'presence', LGTV_WebOS_Presence($hash)) if( AttrVal($name,'pingPresence', 0) == 1 );
-
+        LGTV_WebOS_Presence($hash) if( AttrVal($name,'pingPresence', 0) == 1 );
+        
         if($hash->{helper}{device}{channelguide}{counter} > 2 and AttrVal($name,'channelGuide', 0) == 1 and ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {
         
             LGTV_WebOS_GetChannelProgramInfo($hash);
@@ -341,7 +344,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     } else {
     
         readingsBulkUpdate($hash, 'state', 'off');
-        readingsBulkUpdate($hash, 'presence', LGTV_WebOS_Presence($hash)) if( AttrVal($name,'pingPresence', 0) == 1 );
+        LGTV_WebOS_Presence($hash) if( AttrVal($name,'pingPresence', 0) == 1 );
         
         readingsBulkUpdate($hash,'channel','-');
         readingsBulkUpdate($hash,'channelName','-');
@@ -1335,29 +1338,68 @@ sub LGTV_WebOS_FormartStartEndTime($) {
     return "$timeArray[0]-$timeArray[1]-$timeArray[2] $timeArray[3]:$timeArray[4]:$timeArray[5]";
 }
 
+############ Presence Erkennung Begin #################
 sub LGTV_WebOS_Presence($) {
 
-    my $hash    = shift;
-    
+    my $hash    = shift;    
     my $name    = $hash->{NAME};
-    my $temp;
+    
+    
+    $hash->{helper}{RUNNING_PID} = BlockingCall("LGTV_WebOS_PresenceRun", $name.'|'.$hash->{HOST}, "LGTV_WebOS_PresenceDone", 5, "LGTV_WebOS_PresenceAborted", $hash) unless(exists($hash->{helper}{RUNNING_PID}) );
+}
+
+sub LGTV_WebOS_PresenceRun($) {
+
+    my $string          = shift;
+    my ($name, $host)   = split("\\|", $string);
+    
+    my $tmp;
+    my $response;
 
     
-    $temp = qx(ping -c 1 -w 1 $hash->{HOST} 2>&1);
+    $tmp = qx(ping -c 1 -w 1 $hash->{HOST} 2>&1);
 
-    if(defined($temp) and $temp ne "") {
+    if(defined($tmp) and $tmp ne "") {
     
-        chomp $temp;
-        Log3 $name, 5, "PRESENCE ($name) - ping command returned with output:\n$temp";
-        return (($temp =~ /\d+ [Bb]ytes (from|von)/ and not $temp =~ /[Uu]nreachable/) ? "present" : "absent");
+        chomp $tmp;
+        Log3 $name, 5, "LGTV_WebOS ($name) - ping command returned with output:\n$tmp";
+        $response = "$name|".(($tmp =~ /\d+ [Bb]ytes (from|von)/ and not $tmp =~ /[Uu]nreachable/) ? "present" : "absent");
     
     } else {
     
-        return 'Could not execute ping command';
+        $response = "$name|Could not execute ping command";
     }
+    
+    Log3 $name, 4, "Sub LGTV_WebOS_PresenceRun ($name) - Sub finish, Call LGTV_WebOS_PresenceDone";
+    return $response;
 }
 
+sub LGTV_WebOS_PresenceDone($) {
 
+    my ($string)            = @_;
+    
+    my ($name,$response)    = split("\\|",$string);
+    my $hash                = $defs{$name};
+    
+    
+    readingsSingleUpdate($hash, 'presence', $response, 1);
+    
+    Log3 $name, 4, "Sub LGTV_WebOS_PresenceDone ($name) - Abschluss!";
+}
+
+sub LGTV_WebOS_PresenceAborted($) {
+
+    my ($hash)  = @_;
+    my $name    = $hash->{NAME};
+
+    
+    delete($hash->{helper}{RUNNING_PID});
+    readingsSingleUpdate($hash,'presence','pingPresence timedout', 1);
+    
+    Log3 $name, 4, "Sub LGTV_WebOS_PresenceAborted ($name) - The BlockingCall Process terminated unexpectedly. Timedout!";
+}
+
+####### Presence Erkennung Ende ############
 
 
 
