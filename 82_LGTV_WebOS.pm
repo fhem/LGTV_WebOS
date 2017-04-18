@@ -56,7 +56,7 @@ use Blocking;
 
 
 
-my $version = "0.2.1.3";
+my $version = "0.2.1.6";
 
 
 
@@ -244,9 +244,9 @@ sub LGTV_WebOS_Define($$) {
     
     
     if( $init_done ) {
-        LGTV_WebOS_Open($hash);
+        LGTV_WebOS_TimerStatusRequest($hash);
     } else {
-        InternalTimer( gettimeofday()+15, "LGTV_WebOS_Open", $hash, 0 );
+        InternalTimer( gettimeofday()+15, "LGTV_WebOS_TimerStatusRequest", $hash, 0 );
     }
     
     return undef;
@@ -1358,7 +1358,7 @@ sub LGTV_WebOS_PresenceRun($) {
     my $response;
 
     
-    $tmp = qx(ping -c 1 -w 1 $hash->{HOST} 2>&1);
+    $tmp = qx(ping -c 3 -w 2 $host 2>&1);
 
     if(defined($tmp) and $tmp ne "") {
     
@@ -1382,6 +1382,11 @@ sub LGTV_WebOS_PresenceDone($) {
     my ($name,$response)    = split("\\|",$string);
     my $hash                = $defs{$name};
     
+    
+    delete($hash->{helper}{RUNNING_PID});
+    
+    Log3 $name, 4, "Sub LGTV_WebOS_PresenceDone ($name) - Der Helper ist diabled. Daher wird hier abgebrochen" if($hash->{helper}{DISABLED});
+    return if($hash->{helper}{DISABLED});
     
     readingsSingleUpdate($hash, 'presence', $response, 1);
     
