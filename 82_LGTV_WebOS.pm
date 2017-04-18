@@ -6,7 +6,7 @@
 #  All rights reserved
 #
 #   Special thanks goes to comitters:
-#       - Vitolinker
+#       - Vitolinker / Commandref
 #
 #
 #  This script is free software; you can redistribute it and/or modify
@@ -55,7 +55,7 @@ use Encode qw(encode_utf8);
 
 
 
-my $version = "0.1.3";
+my $version = "0.2.1";
 
 
 
@@ -88,6 +88,7 @@ sub LGTV_WebOS_ParseMsg($$);
 sub LGTV_WebOS_Get3DStatus($);
 sub LGTV_WebOS_GetChannelProgramInfo($);
 sub LGTV_WebOS_FormartStartEndTime($);
+sub LGTV_WebOS_Presence($);
 
 
 
@@ -194,6 +195,7 @@ sub LGTV_WebOS_Initialize($) {
     $hash->{AttrFn}     = "LGTV_WebOS_Attr";
     $hash->{AttrList}   = "disable:1 ".
                           "channelGuide:1 ".
+                          "presence:1 ".
                           $readingFnAttributes;
 
 
@@ -222,12 +224,14 @@ sub LGTV_WebOS_Define($$) {
     $hash->{helper}{device}{channelguide}{counter}  = 0;
     $hash->{helper}{device}{registered}             = 0;
     $hash->{helper}{device}{runsetcmd}              = 0;
+    $hash->{helper}{countDisconn}                   = 0;
 
 
     Log3 $name, 3, "LGTV_WebOS ($name) - defined with host $host";
 
     $attr{$name}{devStateIcon} = 'on:10px-kreis-gruen:off off:10px-kreis-rot:on' if( !defined( $attr{$name}{devStateIcon} ) );
     $attr{$name}{room} = 'LGTV' if( !defined( $attr{$name}{room} ) );
+    CommandDeleteReading(undef,$name . ' presence') if( AttrVal($name,'presence', 0) == 0 );
     
     readingsSingleUpdate($hash,'state','off', 1);
     
@@ -314,7 +318,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
 
         
         readingsBulkUpdate($hash, 'state', 'on');
-        readingsBulkUpdate($hash, 'presence', 'present');
+        readingsBulkUpdate($hash, 'presence', LGTV_WebOS_Presence($hash)) if( AttrVal($name,'presence', 0) == 1 );
 
         if($hash->{helper}{device}{channelguide}{counter} > 2 and AttrVal($name,'channelGuide', 0) == 1 and ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {
         
@@ -337,7 +341,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     } else {
     
         readingsBulkUpdate($hash, 'state', 'off');
-        readingsBulkUpdate($hash, 'presence', 'absent');
+        readingsBulkUpdate($hash, 'presence', LGTV_WebOS_Presence($hash)) if( AttrVal($name,'presence', 0) == 1 );
         
         readingsBulkUpdate($hash,'channel','-');
         readingsBulkUpdate($hash,'channelName','-');
@@ -584,7 +588,6 @@ sub LGTV_WebOS_Close($) {
     
     readingsBeginUpdate($hash);
     readingsBulkUpdate($hash, 'state', 'off',);
-    readingsBulkUpdate($hash, 'presence', 'absent');
     readingsEndUpdate($hash, 1);
     
     Log3 $name, 4, "LGTV_WebOS ($name) - Socket Disconnected";
@@ -620,8 +623,17 @@ sub LGTV_WebOS_Read($) {
     $len = sysread($hash->{CD},$buf,10240);          # die genaue Puffergröße wird noch ermittelt
     
     if( !defined($len) or !$len ) {
-        Log3 $name, 4, "LGTV_WebOS ($name) - connection closed by remote Host";
-        LGTV_WebOS_Close($hash);
+    
+        if( $hash->{helper}{countDisconn} == 1 ) {
+        
+            Log3 $name, 4, "LGTV_WebOS ($name) - connection closed by remote Host";
+            LGTV_WebOS_Close($hash);
+            $hash->{helper}{countDisconn} = 0;
+            
+        } else {
+            $hash->{helper}{countDisconn} = 1;
+        }
+        
         return;
     }
     
@@ -1323,6 +1335,28 @@ sub LGTV_WebOS_FormartStartEndTime($) {
     return "$timeArray[0]-$timeArray[1]-$timeArray[2] $timeArray[3]:$timeArray[4]:$timeArray[5]";
 }
 
+sub LGTV_WebOS_Presence($) {
+
+    my $hash    = shift;
+    
+    my $name    = $hash-{NAME};
+    my $temp;
+
+    
+    $temp = qx(ping -c 1 -w 1 $hash->{$HOST} 2>&1);
+
+    if(defined($temp) and $temp ne "") {
+    
+        chomp $temp;
+        Log3 $name, 5, "PRESENCE ($name) - ping command returned with output:\n$temp";
+        $return (($temp =~ /\d+ [Bb]ytes (from|von)/ and not $temp =~ /[Uu]nreachable/) ? "present" : "absent");
+    
+    } else {
+    
+        $return 'Could not execute ping command';
+    }
+}
+
 
 
 
@@ -1507,7 +1541,9 @@ sub LGTV_WebOS_FormartStartEndTime($) {
         </ul>
     </ul>
     <ul>
-        <ul>M&ouml;gliche Werte: 0 =&gt; keine zyklischen TV-Guide-Updates, 1 =&gt; zyklische TV-Guide-Updates</ul>
+        <ul>
+            <ul>M&ouml;gliche Werte: 0 =&gt; keine zyklischen TV-Guide-Updates, 1 =&gt; zyklische TV-Guide-Updates</ul>
+        </ul>
     </ul>
     <p><br /><br /><strong>Generierte Readings/Events:</strong></p>
     <ul>
