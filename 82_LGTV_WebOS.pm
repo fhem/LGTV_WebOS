@@ -56,7 +56,7 @@ use Blocking;
 
 
 
-my $version = "0.2.1.6";
+my $version = "0.2.1.7";
 
 
 
@@ -339,12 +339,13 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         }
     
     } elsif( IsDisabled($name) ) {
-        readingsBulkUpdate($hash, 'state', 'disabled');
+    
+        LGTV_WebOS_Close($hash);
         $hash->{helper}{device}{runsetcmd}              = 0;
+        readingsBulkUpdate($hash, 'state', 'disabled');
     
     } else {
-    
-        readingsBulkUpdate($hash, 'state', 'off');
+        
         LGTV_WebOS_Presence($hash) if( AttrVal($name,'pingPresence', 0) == 1 );
         
         readingsBulkUpdate($hash,'channel','-');
@@ -590,9 +591,7 @@ sub LGTV_WebOS_Close($) {
     delete($hash->{CD});
     delete($selectlist{$name});
     
-    readingsBeginUpdate($hash);
-    readingsBulkUpdate($hash, 'state', 'off',);
-    readingsEndUpdate($hash, 1);
+    readingsSingleUpdate($hash, 'state', 'off',1);
     
     Log3 $name, 4, "LGTV_WebOS ($name) - Socket Disconnected";
 }
@@ -624,20 +623,21 @@ sub LGTV_WebOS_Read($) {
     
     Log3 $name, 4, "LGTV_WebOS ($name) - ReadFn gestartet";
 
-    $len = sysread($hash->{CD},$buf,10240);          # die genaue Puffergröße wird noch ermittelt
+    $len = sysread($hash->{CD},$buf,10240);
     
     if( !defined($len) or !$len ) {
-    
-        if( $hash->{helper}{countDisconn} == 1 ) {
+
+        if( $hash->{helper}{countDisconn} == 2 ) {
         
             Log3 $name, 4, "LGTV_WebOS ($name) - connection closed by remote Host";
             LGTV_WebOS_Close($hash);
             $hash->{helper}{countDisconn} = 0;
             
         } else {
-            $hash->{helper}{countDisconn} = 1;
-        }
         
+            $hash->{helper}{countDisconn} = $hash->{helper}{countDisconn} + 1;
+        }
+
         return;
     }
     
