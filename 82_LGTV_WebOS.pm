@@ -56,7 +56,7 @@ use Blocking;
 
 
 
-my $version = "0.2.1.7";
+my $version = "0.6.0";
 
 
 
@@ -228,7 +228,6 @@ sub LGTV_WebOS_Define($$) {
     $hash->{helper}{device}{channelguide}{counter}  = 0;
     $hash->{helper}{device}{registered}             = 0;
     $hash->{helper}{device}{runsetcmd}              = 0;
-    $hash->{helper}{countDisconn}                   = 0;
 
 
     Log3 $name, 3, "LGTV_WebOS ($name) - defined with host $host";
@@ -237,11 +236,8 @@ sub LGTV_WebOS_Define($$) {
     $attr{$name}{room} = 'LGTV' if( !defined( $attr{$name}{room} ) );
     CommandDeleteReading(undef,$name . ' presence') if( AttrVal($name,'pingPresence', 0) == 0 );
     
-    readingsSingleUpdate($hash,'state','off', 1);
-    
     
     $modules{LGTV_WebOS}{defptr}{$hash->{HOST}} = $hash;
-    
     
     if( $init_done ) {
         LGTV_WebOS_TimerStatusRequest($hash);
@@ -347,6 +343,8 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     } else {
         
         LGTV_WebOS_Presence($hash) if( AttrVal($name,'pingPresence', 0) == 1 );
+        
+        readingsBulkUpdate($hash, 'state', 'off');
         
         readingsBulkUpdate($hash,'channel','-');
         readingsBulkUpdate($hash,'channelName','-');
@@ -591,8 +589,6 @@ sub LGTV_WebOS_Close($) {
     delete($hash->{CD});
     delete($selectlist{$name});
     
-    readingsSingleUpdate($hash, 'state', 'off',1);
-    
     Log3 $name, 4, "LGTV_WebOS ($name) - Socket Disconnected";
 }
 
@@ -627,16 +623,7 @@ sub LGTV_WebOS_Read($) {
     
     if( !defined($len) or !$len ) {
 
-        if( $hash->{helper}{countDisconn} == 2 ) {
-        
-            Log3 $name, 4, "LGTV_WebOS ($name) - connection closed by remote Host";
-            LGTV_WebOS_Close($hash);
-            $hash->{helper}{countDisconn} = 0;
-            
-        } else {
-        
-            $hash->{helper}{countDisconn} = $hash->{helper}{countDisconn} + 1;
-        }
+        LGTV_WebOS_Close($hash);
 
         return;
     }
@@ -1500,6 +1487,12 @@ sub LGTV_WebOS_PresenceAborted($) {
             <li>channelGuide</li>
             Optional attribute to deactivate the recurring TV Guide update. Depending on TV and FHEM host, this causes significant network traffic and / or CPU load</br>
             Valid Values: 0 =&gt; no recurring TV Guide updates, 1 =&gt; recurring TV Guide updates.
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <li>pingPresence</li>
+            current state of ping presence from TV. create a reading presence with values absent or present.
         </ul>
     </ul>
 </ul>
