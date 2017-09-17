@@ -31,8 +31,19 @@
 
 #################################
 ######### Wichtige Hinweise und Links #################
-
-
+#
+## Das JSON Modul immer in einem eval aufrufen
+# $data = eval{decode_json($data)};
+#
+# if($@){
+#   Log3($SELF, 2, "$TYPE ($SELF) - error while request: $@");
+#  
+#   readingsSingleUpdate($hash, "state", "error", 1);
+#
+#   return;
+# }
+##
+##
 ##
 #
 
@@ -49,14 +60,14 @@ use MIME::Base64;
 use IO::Socket::INET;
 use Digest::SHA qw(sha1_hex);
 use JSON qw(decode_json encode_json);
-use Encode qw(encode_utf8);
+use Encode qw(encode_utf8 decode_utf8);
 use Blocking;
 
 
 
 
 
-my $version = "0.6.0";
+my $version = "0.8.3";
 
 
 
@@ -93,6 +104,7 @@ sub LGTV_WebOS_Presence($);
 sub LGTV_WebOS_PresenceRun($);
 sub LGTV_WebOS_PresenceDone($);
 sub LGTV_WebOS_PresenceAborted($);
+sub LGTV_WebOS_WakeUp_Udp($@);
 
 
 
@@ -154,7 +166,8 @@ my %openApps = (
             'ARDMediathek'              => 'ard.mediathek',
             'Arte'                      => 'com.3827031.168353',
             'WetterMeteo'               => 'meteonews',
-            'Notificationcenter'        => 'com.webos.app.notificationcenter'
+            'Notificationcenter'        => 'com.webos.app.notificationcenter',
+            'Plex'                      => 'cdp-30'
 );
 
 my %openAppsPackageName = (
@@ -176,7 +189,8 @@ my %openAppsPackageName = (
             'ard.mediathek'                     => 'ARDMediathek',
             'com.3827031.168353'                => 'Arte',
             'meteonews'                         => 'WetterMeteo',
-            'com.webos.app.notificationcenter'  => 'Notificationcenter'
+            'com.webos.app.notificationcenter'  => 'Notificationcenter',
+            'cdp-30'                            => 'Plex'
 );
 
 
@@ -200,6 +214,7 @@ sub LGTV_WebOS_Initialize($) {
     $hash->{AttrList}   = "disable:1 ".
                           "channelGuide:1 ".
                           "pingPresence:1 ".
+                          "wakeOnLanMAC ".
                           $readingFnAttributes;
 
 
@@ -228,6 +243,7 @@ sub LGTV_WebOS_Define($$) {
     $hash->{helper}{device}{channelguide}{counter}  = 0;
     $hash->{helper}{device}{registered}             = 0;
     $hash->{helper}{device}{runsetcmd}              = 0;
+    $hash->{helper}{device}{channelguide}{counter}  = 'none';
 
 
     Log3 $name, 3, "LGTV_WebOS ($name) - defined with host $host";
@@ -412,7 +428,7 @@ sub LGTV_WebOS_Set($@) {
         return "usage: screenMsg <message>" if( @args < 1 );
 
         my $msg = join(" ", @args);
-        $payload{$lgCommands{$cmd}->[1]}    = $msg;
+        $payload{$lgCommands{$cmd}->[1]}    = decode_utf8($msg);
         $uri                                = $lgCommands{$cmd}->[0];
         
     } elsif($cmd eq 'on' or $cmd eq 'off') {
@@ -421,7 +437,11 @@ sub LGTV_WebOS_Set($@) {
         if($cmd eq 'off') {
             $uri                                = $lgCommands{powerOff};
         } elsif ($cmd eq 'on') {
-            $uri                                = $lgCommands{powerOn};
+            if( AttrVal($name,'wakeOnLanMAC','none') ne 'none') {
+                LGTV_WebOS_WakeUp_Udp($hash,$hash->{HOST},AttrVal($name,'wakeOnLanMAC',0));
+            } else {
+                $uri                                = $lgCommands{powerOn};
+            }
         }
         
     } elsif($cmd eq '3D') {
@@ -617,7 +637,7 @@ sub LGTV_WebOS_Read($) {
     my $buf;
     
     
-    Log3 $name, 4, "LGTV_WebOS ($name) - ReadFn gestartet";
+    Log3 $name, 4, "LGTV_WebOS ($name) - ReadFn started";
 
     $len = sysread($hash->{CD},$buf,10240);
     
@@ -629,7 +649,7 @@ sub LGTV_WebOS_Read($) {
     }
     
 	unless( defined $buf) { 
-        Log3 $name, 3, "LGTV_WebOS ($name) - Keine Daten empfangen";
+        Log3 $name, 3, "LGTV_WebOS ($name) - no data received";
         return; 
     }
     
@@ -796,7 +816,10 @@ sub LGTV_WebOS_ResponseProcessing($$) {
         }
         
         my $decode_json     = decode_json(encode_utf8($json));
-
+        if($@){
+            Log3 $name, 3, "LGTV_WebOS ($name) - JSON error while request: $@";
+            return;
+        }
 
         LGTV_WebOS_WriteReadings($hash,$decode_json);
         
@@ -814,6 +837,7 @@ sub LGTV_WebOS_WriteReadings($$) {
     my $name            = $hash->{NAME};
     my $mute;
     my $response;
+    my %channelList;
 
     
     Log3 $name, 4, "LGTV_WebOS ($name) - Beginn Readings writing";
@@ -848,7 +872,7 @@ sub LGTV_WebOS_WriteReadings($$) {
         
         my $count = 0;
         foreach my $programList ( @{$decode_json->{payload}{programList}} ) {
-        
+            
             if($count < 1) {
             
                 readingsBulkUpdate($hash,'channelCurrentTitle',$programList->{programName});
@@ -1390,6 +1414,32 @@ sub LGTV_WebOS_PresenceAborted($) {
     readingsSingleUpdate($hash,'presence','pingPresence timedout', 1);
     
     Log3 $name, 4, "Sub LGTV_WebOS_PresenceAborted ($name) - The BlockingCall Process terminated unexpectedly. Timedout!";
+}
+
+sub LGTV_WebOS_WakeUp_Udp($@) {
+
+    my ($hash,$mac_addr,$host,$port) = @_;
+    my $name  = $hash->{NAME};
+
+    # use the discard service if $port not passed in
+    if (!defined $port || $port !~ /^\d+$/ ) { $port = 9 }
+
+    my $sock = new IO::Socket::INET(Proto=>'udp') or die "socket : $!";
+    if(!$sock) {
+        Log3 $name, 3, "Sub LGTV_WebOS_WakeUp_Udp ($name) - Can't create WOL socket";
+        return 1;
+    }
+  
+    my $ip_addr   = inet_aton($host);
+    my $sock_addr = sockaddr_in($port, $ip_addr);
+    $mac_addr     =~ s/://g;
+    my $packet    = pack('C6H*', 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, $mac_addr x 16);
+
+    setsockopt($sock, SOL_SOCKET, SO_BROADCAST, 1) or die "setsockopt : $!";
+    send($sock, $packet, 0, $sock_addr) or die "send : $!";
+    close ($sock);
+
+    return 1;
 }
 
 ####### Presence Erkennung Ende ############
