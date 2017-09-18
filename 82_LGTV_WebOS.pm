@@ -67,7 +67,7 @@ use Blocking;
 
 
 
-my $version = "0.8.5";
+my $version = "0.8.6";
 
 
 
@@ -438,8 +438,8 @@ sub LGTV_WebOS_Set($@) {
         if($cmd eq 'off') {
             $uri                                = $lgCommands{powerOff};
         } elsif ($cmd eq 'on') {
-            if( AttrVal($name,'wakeOnLanMAC','none') ne 'none' and AttrVal($name,'wakeOnLanBroadcast','none') ne 'none') {
-                LGTV_WebOS_WakeUp_Udp($hash,AttrVal($name,'wakeOnLanMAC',0),AttrVal($name,'wakeOnLanBroadcast',0));
+            if( AttrVal($name,'wakeOnLanMAC','none') ne 'none' ) {
+                LGTV_WebOS_WakeUp_Udp($hash,AttrVal($name,'wakeOnLanMAC',0),AttrVal($name,'wakeOnLanBroadcast','255.255.255.255'));
                 return;
             } else {
                 $uri                                = $lgCommands{powerOn};
@@ -1423,9 +1423,7 @@ sub LGTV_WebOS_WakeUp_Udp($@) {
     my ($hash,$mac_addr,$host,$port) = @_;
     my $name  = $hash->{NAME};
 
-    $host = '255.255.255.255' if (!defined $host);
-    
-    # use the discard service if $port not passed in
+
     $port = 9 if (!defined $port || $port !~ /^\d+$/ );
 
     my $sock = new IO::Socket::INET(Proto=>'udp') or die "socket : $!";
