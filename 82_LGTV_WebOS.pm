@@ -438,7 +438,7 @@ sub LGTV_WebOS_Set($@) {
             $uri                                = $lgCommands{powerOff};
         } elsif ($cmd eq 'on') {
             if( AttrVal($name,'wakeOnLanMAC','none') ne 'none') {
-                LGTV_WebOS_WakeUp_Udp($hash,$hash->{HOST},AttrVal($name,'wakeOnLanMAC',0));
+                LGTV_WebOS_WakeUp_Udp($hash,AttrVal($name,'wakeOnLanMAC',0),$hash->{HOST});
             } else {
                 $uri                                = $lgCommands{powerOn};
             }
