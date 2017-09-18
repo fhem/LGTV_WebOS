@@ -67,7 +67,7 @@ use Blocking;
 
 
 
-my $version = "0.8.6";
+my $version = "1.0.0";
 
 
 
@@ -1547,6 +1547,18 @@ sub LGTV_WebOS_WakeUp_Udp($@) {
             current state of ping presence from TV. create a reading presence with values absent or present.
         </ul>
     </ul>
+    <ul>
+        <ul>
+            <li>wakeOnLanMAC</li>
+            Network MAC Address of the LG TV Networkdevice.
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <li>wakeOnLanBroadcast</li>
+            Broadcast Address of the Network - wakeOnLanBroadcast &lt;network&gt;.255
+        </ul>
+    </ul>
 </ul>
 
 =end html
@@ -1636,6 +1648,22 @@ sub LGTV_WebOS_WakeUp_Udp($@) {
     <ul>
         <ul>
             <ul>M&ouml;gliche Werte: 0 =&gt; keine zyklischen TV-Guide-Updates, 1 =&gt; zyklische TV-Guide-Updates</ul>
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <ul>
+                <li>wakeOnLanMAC</li>
+                MAC Addresse der Netzwerkkarte vom LG TV
+            </ul>
+        </ul>        
+    </ul>    
+    <ul>
+        <ul>
+            <ul>
+                <li>wakeOnLanBroadcast</li>
+                Broadcast Netzwerkadresse - wakeOnLanBroadcast &lt;netzwerk&gt;.255
+            </ul>
         </ul>
     </ul>
     <p><br /><br /><strong>Generierte Readings/Events:</strong></p>
