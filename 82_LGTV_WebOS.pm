@@ -67,7 +67,7 @@ use Blocking;
 
 
 
-my $version = "0.8.3";
+my $version = "0.8.4";
 
 
 
@@ -439,6 +439,7 @@ sub LGTV_WebOS_Set($@) {
         } elsif ($cmd eq 'on') {
             if( AttrVal($name,'wakeOnLanMAC','none') ne 'none') {
                 LGTV_WebOS_WakeUp_Udp($hash,AttrVal($name,'wakeOnLanMAC',0),$hash->{HOST});
+                return;
             } else {
                 $uri                                = $lgCommands{powerOn};
             }
