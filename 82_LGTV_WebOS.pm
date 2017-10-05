@@ -67,7 +67,7 @@ use Blocking;
 
 
 
-my $version = "1.0.1";
+my $version = "1.0.2";
 
 
 
@@ -258,7 +258,7 @@ sub LGTV_WebOS_Define($$) {
     if( $init_done ) {
         LGTV_WebOS_TimerStatusRequest($hash);
     } else {
-        InternalTimer( gettimeofday()+15, "LGTV_WebOS_TimerStatusRequest", $hash, 0 );
+        InternalTimer( gettimeofday()+15, "LGTV_WebOS_TimerStatusRequest", $hash );
     }
     
     return undef;
@@ -344,10 +344,10 @@ sub LGTV_WebOS_TimerStatusRequest($) {
         } else {
         
             LGTV_WebOS_GetAudioStatus($hash);
-            InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash, 0 ) if( ReadingsVal($name,'launchApp', 'TV') eq 'TV' );
-            InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetForgroundAppInfo', $hash, 0 );
-            InternalTimer( gettimeofday()+6, 'LGTV_WebOS_Get3DStatus', $hash, 0 );
-            InternalTimer( gettimeofday()+8, 'LGTV_WebOS_GetExternalInputList', $hash, 0 );
+            InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash ) if( ReadingsVal($name,'launchApp', 'TV') eq 'TV' );
+            InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetForgroundAppInfo', $hash );
+            InternalTimer( gettimeofday()+6, 'LGTV_WebOS_Get3DStatus', $hash );
+            InternalTimer( gettimeofday()+8, 'LGTV_WebOS_GetExternalInputList', $hash );
         }
     
     } elsif( IsDisabled($name) ) {
@@ -380,7 +380,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     LGTV_WebOS_Open($hash) if( !IsDisabled($name) and not $hash->{CD} );
     
     $hash->{helper}{device}{channelguide}{counter}  = $hash->{helper}{device}{channelguide}{counter} +1;
-    InternalTimer( gettimeofday()+10,"LGTV_WebOS_TimerStatusRequest", $hash, 1 );
+    InternalTimer( gettimeofday()+10,"LGTV_WebOS_TimerStatusRequest", $hash );
 }
 
 sub LGTV_WebOS_Set($@) {
