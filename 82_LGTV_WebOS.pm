@@ -353,6 +353,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     } elsif( IsDisabled($name) ) {
     
         LGTV_WebOS_Close($hash);
+        LGTV_WebOS_Presence($hash) if( AttrVal($name,'pingPresence', 0) == 1 );
         $hash->{helper}{device}{runsetcmd}              = 0;
         readingsBulkUpdate($hash, 'state', 'disabled');
     
