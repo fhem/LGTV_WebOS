@@ -67,7 +67,7 @@ use Blocking;
 
 
 
-my $version = "1.0.2";
+my $version = "1.0.3";
 
 
 
@@ -1398,12 +1398,16 @@ sub LGTV_WebOS_PresenceDone($) {
     
     delete($hash->{helper}{RUNNING_PID});
     
-    Log3 $name, 4, "Sub LGTV_WebOS_PresenceDone ($name) - Der Helper ist diabled. Daher wird hier abgebrochen" if($hash->{helper}{DISABLED});
+    Log3 $name, 4, "Sub LGTV_WebOS_PresenceDone ($name) - Helper is disabled. Stop processing" if($hash->{helper}{DISABLED});
     return if($hash->{helper}{DISABLED});
     
     readingsSingleUpdate($hash, 'presence', $response, 1);
     
-    Log3 $name, 4, "Sub LGTV_WebOS_PresenceDone ($name) - Abschluss!";
+    LGTV_WebOS_Close($hash)
+    if( $response eq 'absent' and not IsDisabled($name) and $hash->{CD} );  # https://forum.fhem.de/index.php/topic,66671.msg694578.html#msg694578
+    # Sobald pingPresence absent meldet und der Socket noch steht soll er geschlossen werden, da sonst FHEM nach 4-6 min für 10 min blockiert
+    
+    Log3 $name, 4, "Sub LGTV_WebOS_PresenceDone ($name) - presence done";
 }
 
 sub LGTV_WebOS_PresenceAborted($) {
