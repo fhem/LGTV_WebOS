@@ -67,7 +67,7 @@ use Blocking;
 
 
 
-my $version = "1.0.3";
+my $version = "1.2.0";
 
 
 
