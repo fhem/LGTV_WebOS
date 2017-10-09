@@ -1403,9 +1403,7 @@ sub LGTV_WebOS_PresenceDone($) {
     
     readingsSingleUpdate($hash, 'presence', $response, 1);
     
-    LGTV_WebOS_Close($hash)
-    if( $response eq 'absent' and not IsDisabled($name) and $hash->{CD} );  # https://forum.fhem.de/index.php/topic,66671.msg694578.html#msg694578
-    # Sobald pingPresence absent meldet und der Socket noch steht soll er geschlossen werden, da sonst FHEM nach 4-6 min für 10 min blockiert
+    LGTV_WebOS_SocketClosePresenceAbsent($hash,$response);
     
     Log3 $name, 4, "Sub LGTV_WebOS_PresenceDone ($name) - presence done";
 }
@@ -1420,6 +1418,18 @@ sub LGTV_WebOS_PresenceAborted($) {
     readingsSingleUpdate($hash,'presence','pingPresence timedout', 1);
     
     Log3 $name, 4, "Sub LGTV_WebOS_PresenceAborted ($name) - The BlockingCall Process terminated unexpectedly. Timedout!";
+}
+
+sub LGTV_WebOS_SocketClosePresenceAbsent($$) {
+
+    my ($hash,$presence)    = @_;
+    
+    my $name                = $hash->{NAME};
+    
+    
+    LGTV_WebOS_Close($hash)
+    if( $presence eq 'absent' and not IsDisabled($name) and $hash->{CD} );  # https://forum.fhem.de/index.php/topic,66671.msg694578.html#msg694578
+    # Sobald pingPresence absent meldet und der Socket noch steht soll er geschlossen werden, da sonst FHEM nach 4-6 min für 10 min blockiert
 }
 
 sub LGTV_WebOS_WakeUp_Udp($@) {
