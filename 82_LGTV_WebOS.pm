@@ -332,8 +332,6 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     
         Log3 $name, 4, "LGTV_WebOS ($name) - run get functions";
 
-        
-        readingsBulkUpdate($hash, 'state', 'on');
         LGTV_WebOS_Presence($hash) if( AttrVal($name,'pingPresence', 0) == 1 );
         
         if($hash->{helper}{device}{channelguide}{counter} > 2 and AttrVal($name,'channelGuide', 0) == 1 and ReadingsVal($name,'launchApp', 'TV') eq 'TV' ) {
@@ -360,8 +358,6 @@ sub LGTV_WebOS_TimerStatusRequest($) {
     } else {
         
         LGTV_WebOS_Presence($hash) if( AttrVal($name,'pingPresence', 0) == 1 );
-        
-        readingsBulkUpdate($hash, 'state', 'off');
         
         readingsBulkUpdate($hash,'channel','-');
         readingsBulkUpdate($hash,'channelName','-');
@@ -591,6 +587,7 @@ sub LGTV_WebOS_Open($) {
     $hash->{CD}    = $socket;         # sysread / close won't work on fileno
     $selectlist{$name} = $hash;
     
+    readingsSingleUpdate($hash, 'state', 'on', 1);
     
     Log3 $name, 4, "LGTV_WebOS ($name) - Socket Connected";
     
@@ -610,6 +607,8 @@ sub LGTV_WebOS_Close($) {
     delete($hash->{FD});
     delete($hash->{CD});
     delete($selectlist{$name});
+    
+    readingsSingleUpdate($hash, 'state', 'off', 1);
     
     Log3 $name, 4, "LGTV_WebOS ($name) - Socket Disconnected";
 }
