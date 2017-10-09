@@ -587,8 +587,6 @@ sub LGTV_WebOS_Open($) {
     $hash->{CD}    = $socket;         # sysread / close won't work on fileno
     $selectlist{$name} = $hash;
     
-    readingsSingleUpdate($hash, 'state', 'on', 1);
-    
     Log3 $name, 4, "LGTV_WebOS ($name) - Socket Connected";
     
     LGTV_WebOS_Handshake($hash);
@@ -990,6 +988,8 @@ sub LGTV_WebOS_WriteReadings($$) {
         readingsBulkUpdate($hash,'channelNextStartTime','-');
         readingsBulkUpdate($hash,'channelNextEndTime','-');
     }
+    
+    readingsBulkUpdateIfChanged($hash,'state','on');
 
     readingsEndUpdate($hash, 1);
 }
