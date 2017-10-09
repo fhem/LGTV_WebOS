@@ -606,7 +606,7 @@ sub LGTV_WebOS_Close($) {
     delete($hash->{CD});
     delete($selectlist{$name});
     
-    readingsSingleUpdate($hash, 'state', 'off', 1);
+    readingsSingleUpdate($hash,'state','off',1);
     
     Log3 $name, 4, "LGTV_WebOS ($name) - Socket Disconnected";
 }
@@ -785,7 +785,7 @@ sub LGTV_WebOS_ResponseProcessing($$) {
             if ($keyAccept eq $expectedResponse) {
         
                 Log3 $name, 3, "LGTV_WebOS ($name) - Sucessfull WS connection to $hash->{HOST}";
-                readingsSingleUpdate($hash, 'state', 'on', 1 );
+                readingsSingleUpdate($hash,'state','on',1);
         
             } else {
                 LGTV_WebOS_Close($hash);
