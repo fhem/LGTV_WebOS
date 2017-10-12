@@ -956,8 +956,7 @@ sub LGTV_WebOS_WriteReadings($$) {
         
             $response = "error - $decode_json->{error}";
             
-            #if($decode_json->{error} eq '401 insufficient permissions' or $decode_json->{error} eq '401 insufficient permissions (not registered)') {
-            if($decode_json->{error} eq '401 insufficient permissions (not registered)') {
+            if($decode_json->{error} eq '401 insufficient permissions' or $decode_json->{error} eq '401 insufficient permissions (not registered)') {
             
                 readingsBulkUpdate($hash,'pairing','unpaired');
             }
