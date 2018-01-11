@@ -342,7 +342,7 @@ sub LGTV_WebOS_TimerStatusRequest($) {
             $hash->{helper}{device}{channelguide}{counter}  = 0;
         
         } else {
-        
+
             LGTV_WebOS_GetAudioStatus($hash);
             InternalTimer( gettimeofday()+2, 'LGTV_WebOS_GetCurrentChannel', $hash ) if( ReadingsVal($name,'launchApp', 'TV') eq 'TV' );
             InternalTimer( gettimeofday()+4, 'LGTV_WebOS_GetForgroundAppInfo', $hash );
@@ -1213,8 +1213,7 @@ sub LGTV_WebOS_GetAudioStatus($) {
     my $hash        = shift;
     my $name        = $hash->{NAME};
     
-    
-    RemoveInternalTimer($hash,'LGTV_WebOS_GetAudioStatus');
+
     Log3 $name, 4, "LGTV_WebOS ($name) - LGTV_WebOS_GetAudioStatus: " . $hash->{helper}{device}{runsetcmd};
     LGTV_WebOS_CreateSendCommand($hash,$lgCommands{getAudioStatus},undef) if($hash->{helper}{device}{runsetcmd} == 0);
 }
@@ -1269,7 +1268,6 @@ sub LGTV_WebOS_GetChannelProgramInfo($) {
     my $name        = $hash->{NAME};
     
     
-    RemoveInternalTimer($hash,'LGTV_WebOS_GetChannelProgramInfo');
     Log3 $name, 4, "LGTV_WebOS ($name) - LGTV_WebOS_GetChannelProgramInfo: " . $hash->{helper}{device}{runsetcmd};
     LGTV_WebOS_CreateSendCommand($hash,$lgCommands{getChannelProgramInfo},undef) if($hash->{helper}{device}{runsetcmd} == 0);
 }
