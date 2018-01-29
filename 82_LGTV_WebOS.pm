@@ -67,7 +67,7 @@ use Blocking;
 
 
 
-my $version = "2.0.0";
+my $version = "2.0.1";
 
 
 
@@ -151,6 +151,7 @@ my %openApps = (
 
             'Maxdome'                   => 'maxdome',
             'AmazonVideo'               => 'lovefilm.de',
+            'AmazonVid'                 => 'amazon',
             'YouTube'                   => 'youtube.leanback.v4',
             'Netflix'                   => 'netflix',
             'TV'                        => 'com.webos.app.livetv',
@@ -174,6 +175,7 @@ my %openAppsPackageName = (
 
             'maxdome'                           => 'Maxdome',
             'lovefilm.de'                       => 'AmazonVideo',
+            'amazon'                            => 'AmazonVid',
             'youtube.leanback.v4'               => 'YouTube',
             'netflix'                           => 'Netflix',
             'com.webos.app.livetv'              => 'TV',
