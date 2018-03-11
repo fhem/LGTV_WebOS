@@ -67,7 +67,7 @@ use Blocking;
 
 
 
-my $version = "2.0.1";
+my $version = "2.0.2";
 
 
 
@@ -818,7 +818,7 @@ sub LGTV_WebOS_ResponseProcessing($$) {
             return;
         }
         
-        my $decode_json     = decode_json(encode_utf8($json));
+        my $decode_json     = eval{decode_json(encode_utf8($json))};
         if($@){
             Log3 $name, 3, "LGTV_WebOS ($name) - JSON error while request: $@";
             return;
