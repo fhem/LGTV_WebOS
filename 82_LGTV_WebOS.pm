@@ -152,8 +152,8 @@ my %lgCommands = (
 my %openApps = (
 
             'Maxdome'                   => 'maxdome',
-            'AmazonVideo'               => 'lovefilm.de',
-            'AmazonVid'                 => 'amazon',
+            'AmazonLovefilm'            => 'lovefilm.de',
+            'AmazonVideo'               => 'amazon',
             'YouTube'                   => 'youtube.leanback.v4',
             'Netflix'                   => 'netflix',
             'TV'                        => 'com.webos.app.livetv',
@@ -176,8 +176,8 @@ my %openApps = (
 my %openAppsPackageName = (
 
             'maxdome'                           => 'Maxdome',
-            'lovefilm.de'                       => 'AmazonVideo',
-            'amazon'                            => 'AmazonVid',
+            'lovefilm.de'                       => 'AmazonLovefilm',
+            'amazon'                            => 'AmazonVideo',
             'youtube.leanback.v4'               => 'YouTube',
             'netflix'                           => 'Netflix',
             'com.webos.app.livetv'              => 'TV',
