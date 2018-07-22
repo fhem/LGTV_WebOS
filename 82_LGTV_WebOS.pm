@@ -839,8 +839,6 @@ sub LGTV_WebOS_ResponseProcessing($$) {
 
 sub LGTV_WebOS_WriteReadings($$) {
 
-    use Date::Parse;
-
     my ($hash,$decode_json)    = @_;
     
     my $name            = $hash->{NAME};
@@ -878,7 +876,7 @@ sub LGTV_WebOS_WriteReadings($$) {
     }
     
     elsif( ref($decode_json->{payload}{programList}) eq "ARRAY" and scalar(@{$decode_json->{payload}{programList}}) > 0 ) {
-        
+        use Date::Parse;
         my $count = 0;
         foreach my $programList ( @{$decode_json->{payload}{programList}} ) {
         
