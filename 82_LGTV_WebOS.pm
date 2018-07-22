@@ -69,7 +69,7 @@ eval "use Blocking;1" or $missingModul .= "Blocking ";
 
 
 
-my $version = "2.0.5";
+my $version = "2.0.6";
 
 
 
@@ -246,6 +246,7 @@ sub LGTV_WebOS_Define($$) {
 
     $hash->{HOST}                                   = $host;
     $hash->{VERSION}                                = $version;
+    $hash->{PARTIAL}                                = '';
     $hash->{helper}{device}{channelguide}{counter}  = 0;
     $hash->{helper}{device}{registered}             = 0;
     $hash->{helper}{device}{runsetcmd}              = 0;
@@ -838,6 +839,8 @@ sub LGTV_WebOS_ResponseProcessing($$) {
 
 sub LGTV_WebOS_WriteReadings($$) {
 
+    use Date::Parse;
+
     my ($hash,$decode_json)    = @_;
     
     my $name            = $hash->{NAME};
@@ -878,22 +881,24 @@ sub LGTV_WebOS_WriteReadings($$) {
         
         my $count = 0;
         foreach my $programList ( @{$decode_json->{payload}{programList}} ) {
+        
+            if( str2time(LGTV_WebOS_FormartStartEndTime($programList->{localEndTime})) > time() ) {
+                if($count < 1) {
+                
+                    readingsBulkUpdate($hash,'channelCurrentTitle',$programList->{programName});
+                    readingsBulkUpdate($hash,'channelCurrentStartTime',LGTV_WebOS_FormartStartEndTime($programList->{localStartTime}));
+                    readingsBulkUpdate($hash,'channelCurrentEndTime',LGTV_WebOS_FormartStartEndTime($programList->{localEndTime}));
+                
+                } elsif($count < 2) {
+                
+                    readingsBulkUpdate($hash,'channelNextTitle',$programList->{programName});
+                    readingsBulkUpdate($hash,'channelNextStartTime',LGTV_WebOS_FormartStartEndTime($programList->{localStartTime}));
+                    readingsBulkUpdate($hash,'channelNextEndTime',LGTV_WebOS_FormartStartEndTime($programList->{localEndTime}));
+                }
             
-            if($count < 1) {
-            
-                readingsBulkUpdate($hash,'channelCurrentTitle',$programList->{programName});
-                readingsBulkUpdate($hash,'channelCurrentStartTime',LGTV_WebOS_FormartStartEndTime($programList->{localStartTime}));
-                readingsBulkUpdate($hash,'channelCurrentEndTime',LGTV_WebOS_FormartStartEndTime($programList->{localEndTime}));
-            
-            } elsif($count < 2) {
-            
-                readingsBulkUpdate($hash,'channelNextTitle',$programList->{programName});
-                readingsBulkUpdate($hash,'channelNextStartTime',LGTV_WebOS_FormartStartEndTime($programList->{localStartTime}));
-                readingsBulkUpdate($hash,'channelNextEndTime',LGTV_WebOS_FormartStartEndTime($programList->{localEndTime}));
+                $count++;
+                return if($count > 1);
             }
-            
-            $count++;
-            return if($count > 1);
         }
     }
     
