@@ -980,11 +980,11 @@ sub LGTV_WebOS_WriteReadings($$) {
     readingsBulkUpdateIfChanged($hash,'volume',$decode_json->{payload}{'volume'}) if( defined($decode_json->{payload}{'volume'}) );
     readingsBulkUpdateIfChanged($hash,'lastResponse',$response) if( defined($response) );
     
-    if( defined($decode_json->{payload}{'channelNumber'}) and ReadingsVal($name,'launchApp','none') eq 'TV') {
+    if( ReadingsVal($name,'launchApp','none') eq 'TV' ) {
     
-        readingsBulkUpdateIfChanged($hash,'channel',$decode_json->{payload}{'channelNumber'});
-        readingsBulkUpdateIfChanged($hash,'channelName',$decode_json->{payload}{'channelName'});
-        readingsBulkUpdateIfChanged($hash,'channelMedia',$decode_json->{payload}{'channelTypeName'});
+        readingsBulkUpdateIfChanged($hash,'channel',$decode_json->{payload}{'channelNumber'}) if( defined($decode_json->{payload}{'channelNumber'}) );
+        readingsBulkUpdateIfChanged($hash,'channelName',$decode_json->{payload}{'channelName'}) if( defined($decode_json->{payload}{'channelName'}) );
+        readingsBulkUpdateIfChanged($hash,'channelMedia',$decode_json->{payload}{'channelTypeName'}) if( defined($decode_json->{payload}{'channelTypeName'}) );
     
     } else {
     
