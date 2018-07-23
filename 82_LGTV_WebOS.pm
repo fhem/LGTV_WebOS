@@ -976,11 +976,11 @@ sub LGTV_WebOS_WriteReadings($$) {
     }
     
     
-    readingsBulkUpdateIfChanged($hash,'lgKey',$decode_json->{payload}{'client-key'}) if( defined($decode_json->{payload}) );
-    readingsBulkUpdateIfChanged($hash,'volume',$decode_json->{payload}{'volume'}) if( defined($decode_json->{payload}) );
+    readingsBulkUpdateIfChanged($hash,'lgKey',$decode_json->{payload}{'client-key'}) if( defined($decode_json->{payload}{'client-key'}) );
+    readingsBulkUpdateIfChanged($hash,'volume',$decode_json->{payload}{'volume'}) if( defined($decode_json->{payload}{'volume'}) );
     readingsBulkUpdateIfChanged($hash,'lastResponse',$response);
     
-    if( defined($decode_json->{payload}) and ReadingsVal($name,'launchApp','none') eq 'TV') {
+    if( defined($decode_json->{payload}{'channelNumber'}) and ReadingsVal($name,'launchApp','none') eq 'TV') {
     
         readingsBulkUpdateIfChanged($hash,'channel',$decode_json->{payload}{'channelNumber'});
         readingsBulkUpdateIfChanged($hash,'channelName',$decode_json->{payload}{'channelName'});
