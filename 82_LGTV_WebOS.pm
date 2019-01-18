@@ -52,27 +52,27 @@ package main;
 use strict;
 use warnings;
 
-my $version = "2.2.0";
+my $version = '2.2.0';
 
 sub LGTV_WebOS_Initialize($) {
 
     my ($hash) = @_;
 
     # Provider
-    $hash->{ReadFn}  = "LGTV_WebOS::Read";
-    $hash->{WriteFn} = "LGTV_WebOS::Write";
+    $hash->{ReadFn}  = 'LGTV_WebOS::Read';
+    $hash->{WriteFn} = 'LGTV_WebOS::Write';
 
     # Consumer
-    $hash->{SetFn}   = "LGTV_WebOS::Set";
-    $hash->{DefFn}   = "LGTV_WebOS::Define";
-    $hash->{UndefFn} = "LGTV_WebOS::Undef";
-    $hash->{AttrFn}  = "LGTV_WebOS::Attr";
+    $hash->{SetFn}   = 'LGTV_WebOS::Set';
+    $hash->{DefFn}   = 'LGTV_WebOS::Define';
+    $hash->{UndefFn} = 'LGTV_WebOS::Undef';
+    $hash->{AttrFn}  = 'LGTV_WebOS::Attr';
     $hash->{AttrList} =
-        "disable:1 "
-      . "channelGuide:1 "
-      . "pingPresence:1 "
-      . "wakeOnLanMAC "
-      . "wakeOnLanBroadcast "
+        'disable:1 '
+      . 'channelGuide:1 '
+      . 'pingPresence:1 '
+      . 'wakeOnLanMAC '
+      . 'wakeOnLanBroadcast '
       . $readingFnAttributes;
 
     foreach my $d ( sort keys %{ $modules{LGTV_WebOS}{defptr} } ) {
@@ -131,41 +131,41 @@ BEGIN {
 
 my %lgCommands = (
 
-    "getServiceList"        => ["ssap://api/getServiceList"],
-    "getChannelList"        => ["ssap://tv/getChannelList"],
-    "getVolume"             => ["ssap://audio/getVolume"],
-    "getAudioStatus"        => ["ssap://audio/getStatus"],
-    "getCurrentChannel"     => ["ssap://tv/getCurrentChannel"],
-    "getChannelProgramInfo" => ["ssap://tv/getChannelProgramInfo"],
-    "getForegroundAppInfo" =>
-      ["ssap://com.webos.applicationManager/getForegroundAppInfo"],
-    "getAppList"   => ["ssap://com.webos.applicationManager/listApps"],
-    "getAppStatus" => ["ssap://com.webos.service.appstatus/getAppStatus"],
-    "getExternalInputList" => ["ssap://tv/getExternalInputList"],
-    "get3DStatus" => ["ssap://com.webos.service.tv.display/get3DStatus"],
-    "powerOff"    => ["ssap://system/turnOff"],
-    "powerOn"     => ["ssap://system/turnOn"],
-    "3DOn"        => ["ssap://com.webos.service.tv.display/set3DOn"],
-    "3DOff"       => ["ssap://com.webos.service.tv.display/set3DOff"],
-    "volumeUp"    => ["ssap://audio/volumeUp"],
-    "volumeDown"  => ["ssap://audio/volumeDown"],
-    "channelDown" => ["ssap://tv/channelDown"],
-    "channelUp"   => ["ssap://tv/channelUp"],
-    "play"        => ["ssap://media.controls/play"],
-    "stop"        => ["ssap://media.controls/stop"],
-    "pause"       => ["ssap://media.controls/pause"],
-    "rewind"      => ["ssap://media.controls/rewind"],
-    "fastForward" => ["ssap://media.controls/fastForward"],
-    "closeViewer" => ["ssap://media.viewer/close"],
-    "closeApp"    => ["ssap://system.launcher/close"],
-    "openApp"     => ["ssap://system.launcher/open"],
-    "closeWebApp" => ["ssap://webapp/closeWebApp"],
-    "openChannel" => [ "ssap://tv/openChannel", "channelNumber" ],
-    "launchApp"   => [ "ssap://system.launcher/launch", "id" ],
-    "screenMsg"   => [ "ssap://system.notifications/createToast", "message" ],
-    "mute"        => [ "ssap://audio/setMute", "mute" ],
-    "volume"      => [ "ssap://audio/setVolume", "volume" ],
-    "switchInput" => [ "ssap://tv/switchInput", "input" ],
+    'getServiceList'        => ['ssap://api/getServiceList'],
+    'getChannelList'        => ['ssap://tv/getChannelList'],
+    'getVolume'             => ['ssap://audio/getVolume'],
+    'getAudioStatus'        => ['ssap://audio/getStatus'],
+    'getCurrentChannel'     => ['ssap://tv/getCurrentChannel'],
+    'getChannelProgramInfo' => ['ssap://tv/getChannelProgramInfo'],
+    'getForegroundAppInfo' =>
+      ['ssap://com.webos.applicationManager/getForegroundAppInfo'],
+    'getAppList'   => ['ssap://com.webos.applicationManager/listApps'],
+    'getAppStatus' => ['ssap://com.webos.service.appstatus/getAppStatus'],
+    'getExternalInputList' => ['ssap://tv/getExternalInputList'],
+    'get3DStatus' => ['ssap://com.webos.service.tv.display/get3DStatus'],
+    'powerOff'    => ['ssap://system/turnOff'],
+    'powerOn'     => ['ssap://system/turnOn'],
+    '3DOn'        => ['ssap://com.webos.service.tv.display/set3DOn'],
+    '3DOff'       => ['ssap://com.webos.service.tv.display/set3DOff'],
+    'volumeUp'    => ['ssap://audio/volumeUp'],
+    'volumeDown'  => ['ssap://audio/volumeDown'],
+    'channelDown' => ['ssap://tv/channelDown'],
+    'channelUp'   => ['ssap://tv/channelUp'],
+    'play'        => ['ssap://media.controls/play'],
+    'stop'        => ['ssap://media.controls/stop'],
+    'pause'       => ['ssap://media.controls/pause'],
+    'rewind'      => ['ssap://media.controls/rewind'],
+    'fastForward' => ['ssap://media.controls/fastForward'],
+    'closeViewer' => ['ssap://media.viewer/close'],
+    'closeApp'    => ['ssap://system.launcher/close'],
+    'openApp'     => ['ssap://system.launcher/open'],
+    'closeWebApp' => ['ssap://webapp/closeWebApp'],
+    'openChannel' => [ 'ssap://tv/openChannel', 'channelNumber' ],
+    'launchApp'   => [ 'ssap://system.launcher/launch', 'id' ],
+    'screenMsg'   => [ 'ssap://system.notifications/createToast', 'message' ],
+    'mute'        => [ 'ssap://audio/setMute', 'mute' ],
+    'volume'      => [ 'ssap://audio/setVolume', 'volume' ],
+    'switchInput' => [ 'ssap://tv/switchInput', 'input' ],
 );
 
 my %openApps = (
@@ -195,11 +195,13 @@ my %openAppsPackageName = reverse %openApps;
 
 sub Define($$) {
     my ( $hash, $def ) = @_;
-    my @a = split( "[ \t][ \t]*", $def );
+    my @a = split( '[ \t][ \t]*', $def );
 
-    return "too few parameters: define <name> LGTV_WebOS <HOST>" if ( @a != 3 );
+    return 'too few parameters: define <name> LGTV_WebOS <HOST>' if ( @a != 3 );
     return
-      "Cannot define LGTV_WebOS device. Perl modul ${missingModul} is missing."
+        'Cannot define LGTV_WebOS device. Perl modul '
+      . $missingModul
+      . ' is missing.'
       if ($missingModul);
 
     my $name = $a[0];
@@ -255,29 +257,29 @@ sub Attr(@) {
     my $hash = $defs{$name};
     my $orig = $attrVal;
 
-    if ( $attrName eq "disable" ) {
-        if ( $cmd eq "set" and $attrVal eq "1" ) {
+    if ( $attrName eq 'disable' ) {
+        if ( $cmd eq 'set' and $attrVal eq '1' ) {
             RemoveInternalTimer($hash);
-            readingsSingleUpdate( $hash, "state", "disabled", 1 );
+            readingsSingleUpdate( $hash, 'state', 'disabled', 1 );
             $hash->{PARTIAL} = '';
             Log3 $name, 3, "LGTV_WebOS ($name) - disabled";
         }
 
-        elsif ( $cmd eq "del" ) {
-            readingsSingleUpdate( $hash, "state", "active", 1 );
+        elsif ( $cmd eq 'del' ) {
+            readingsSingleUpdate( $hash, 'state', 'active', 1 );
             Log3 $name, 3, "LGTV_WebOS ($name) - enabled";
             TimerStatusRequest($hash);
         }
     }
 
-    if ( $attrName eq "disabledForIntervals" ) {
-        if ( $cmd eq "set" ) {
+    if ( $attrName eq 'disabledForIntervals' ) {
+        if ( $cmd eq 'set' ) {
             Log3 $name, 3, "LGTV_WebOS ($name) - enable disabledForIntervals";
-            readingsSingleUpdate( $hash, "state", "Unknown", 1 );
+            readingsSingleUpdate( $hash, 'state', 'Unknown', 1 );
         }
 
-        elsif ( $cmd eq "del" ) {
-            readingsSingleUpdate( $hash, "state", "active", 1 );
+        elsif ( $cmd eq 'del' ) {
+            readingsSingleUpdate( $hash, 'state', 'active', 1 );
             Log3 $name, 3, "LGTV_WebOS ($name) - delete disabledForIntervals";
         }
     }
