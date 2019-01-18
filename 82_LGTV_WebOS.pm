@@ -150,7 +150,6 @@ my %lgCommands = (
 );
 
 my %openApps = (
-
             'Maxdome'                   => 'maxdome',
             'AmazonLovefilm'            => 'lovefilm.de',
             'AmazonVideo'               => 'amazon',
@@ -372,16 +371,8 @@ sub LGTV_WebOS_Set($@) {
     my %payload;
     my $inputs;
     my @inputs;
-    
-    
-    if ( defined( $hash->{helper}{device}{inputs} ) and ref( $hash->{helper}{device}{inputs} ) eq "HASH" ) {
-    
-        @inputs = keys %{ $hash->{helper}{device}{inputs} };
-    }
-    
-    @inputs = sort(@inputs);
-    $inputs = join(",", @inputs);
-    
+
+
     if($cmd eq 'connect') {
         return "usage: connect" if( @args != 0 );
 
@@ -539,7 +530,13 @@ sub LGTV_WebOS_Set($@) {
 
     } else {
         my  $list = ""; 
-        $list .= "connect:noArg pairing:noArg screenMsg mute:on,off volume:slider,0,1,100 volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg launchApp:Maxdome,AmazonLovefilm,AmazonVideo,YouTube,Netflix,TV,GooglePlay,Browser,Chilieu,TVCast,Smartshare,Scheduler,Miracast,TVGuide,Timemachine,ARDMediathek,Arte,WetterMeteo,Notificationcenter,Plex,SkyOnline 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg input:$inputs channel";
+        $list .= 'connect:noArg pairing:noArg screenMsg mute:on,off volume:slider,0,1,100 volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg';
+        $list .= ' 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg channel';
+        $list .= ' launchApp:' . join(',', => map qq{$_} => keys %openApps);
+        $list .= ' input:' . join(',', => map qq{$_} => keys %{$hash->{helper}{device}{inputs}})
+            if ( defined( $hash->{helper}{device}{inputs} )
+              and ref( $hash->{helper}{device}{inputs} ) eq "HASH" );
+
         return "Unknown argument $cmd, choose one of $list";
     }
 
