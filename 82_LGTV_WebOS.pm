@@ -122,7 +122,10 @@ BEGIN {
           selectlist
           SOL_SOCKET
           SO_BROADCAST
-          BlockingCall)
+          BlockingCall
+          trim
+          sysread
+          syswrite)
     );
 }
 
@@ -1352,7 +1355,7 @@ sub GetCurrentChannel($) {
     my $hash = shift;
     my $name = $hash->{NAME};
 
-    RemoveInternalTimer( $hash, 'GetCurrentChannel' );
+    RemoveInternalTimer( $hash, 'LGTV_WebOS::GetCurrentChannel' );
     Log3 $name, 4, "LGTV_WebOS ($name) - GetCurrentChannel: "
       . $hash->{helper}{device}{runsetcmd};
     CreateSendCommand( $hash, $lgCommands{getCurrentChannel}, undef )
@@ -1364,7 +1367,7 @@ sub GetForgroundAppInfo($) {
     my $hash = shift;
     my $name = $hash->{NAME};
 
-    RemoveInternalTimer( $hash, 'GetForgroundAppInfo' );
+    RemoveInternalTimer( $hash, 'LGTV_WebOS::GetForgroundAppInfo' );
     Log3 $name, 4, "LGTV_WebOS ($name) - GetForgroundAppInfo: "
       . $hash->{helper}{device}{runsetcmd};
     CreateSendCommand( $hash, $lgCommands{getForegroundAppInfo}, undef )
