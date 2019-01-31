@@ -66,6 +66,7 @@ sub LGTV_WebOS_Initialize($) {
     $hash->{SetFn}   = 'LGTV_WebOS::Set';
     $hash->{DefFn}   = 'LGTV_WebOS::Define';
     $hash->{UndefFn} = 'LGTV_WebOS::Undef';
+    $hash->{NotifyFn} = 'LGTV_WebOS::Notify';
     $hash->{AttrFn}  = 'LGTV_WebOS::Attr';
     $hash->{AttrList} =
         'disable:1 '
@@ -125,7 +126,8 @@ BEGIN {
           BlockingCall
           trim
           sysread
-          syswrite)
+          syswrite
+          deviceEvents)
     );
 }
 
@@ -189,7 +191,8 @@ my %openApps = (
     'WetterMeteo'        => 'meteonews',
     'Notificationcenter' => 'com.webos.app.notificationcenter',
     'Plex'               => 'cdp-30',
-    'SkyOnline'          => 'de.sky.skyonline'
+    'SkyOnline'          => 'de.sky.skyonline',
+    'Smart-IPTV'         => 'com.1827622.109556'
 );
 my %openAppsPackageName = reverse %openApps;
 
@@ -224,14 +227,6 @@ sub Define($$) {
       if ( AttrVal( $name, 'pingPresence', 0 ) == 0 );
 
     $modules{LGTV_WebOS}{defptr}{ $hash->{HOST} } = $hash;
-
-    if ($init_done) {
-        TimerStatusRequest($hash);
-    }
-    else {
-        InternalTimer( gettimeofday() + 15,
-            "LGTV_WebOS::TimerStatusRequest", $hash );
-    }
 
     return undef;
 }
@@ -285,6 +280,46 @@ sub Attr(@) {
     }
 
     return undef;
+}
+
+sub Notify($$) {
+
+    my ( $hash, $dev ) = @_;
+    my $name = $hash->{NAME};
+    return TimerStatusRequest($hash) if ( IsDisabled($name) );
+
+    my $devname = $dev->{NAME};
+    my $devtype = $dev->{TYPE};
+    my $events  = deviceEvents( $dev, 1 );
+    return if ( !$events );
+
+    TimerStatusRequest($hash)
+      if (
+        (
+          (
+                grep /^DEFINED.$name$/,
+                @{$events}
+                or grep /^DELETEATTR.$name.disable$/,
+                @{$events}
+                or grep /^ATTR.$name.disable.0$/,
+                @{$events}
+          )
+        and $init_done
+        and $devname eq 'global' )
+        or (
+            (
+                grep /^INITIALIZED$/,
+                @{$events}
+                or grep /^REREADCFG$/,
+                @{$events}
+                or grep /^MODIFIED.$name$/,
+                @{$events}
+            )
+            and $devname eq 'global'
+        )
+      );
+
+    return;
 }
 
 sub TimerStatusRequest($) {
