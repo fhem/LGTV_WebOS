@@ -690,7 +690,7 @@ sub Read($) {
 
     $len = sysread( $hash->{CD}, $buf, 10240 );
 
-    if ( !defined($len) or !$len ) {
+    if ( $len == 0 ) {
 
         Close($hash);
 
