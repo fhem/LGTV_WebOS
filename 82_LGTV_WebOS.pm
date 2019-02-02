@@ -69,7 +69,7 @@ eval "use Blocking;1" or $missingModul .= "Blocking ";
 
 
 
-my $version = "2.0.9";
+my $version = "2.0.10";
 
 
 
@@ -170,7 +170,8 @@ my %openApps = (
             'WetterMeteo'               => 'meteonews',
             'Notificationcenter'        => 'com.webos.app.notificationcenter',
             'Plex'                      => 'cdp-30',
-            'SkyOnline'                 => 'de.sky.skyonline'
+            'SkyOnline'                 => 'de.sky.skyonline',
+            'Smart-IPTV'                => 'com.1827622.109556'
 );
 
 my %openAppsPackageName = reverse %openApps;
