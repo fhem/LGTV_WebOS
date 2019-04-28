@@ -52,22 +52,22 @@ package main;
 use strict;
 use warnings;
 
-my $version = '2.2.0';
+my $version = '2.2.1';
 
 sub LGTV_WebOS_Initialize($) {
 
     my ($hash) = @_;
 
     # Provider
-    $hash->{ReadFn}  = 'LGTV_WebOS::Read';
-    $hash->{WriteFn} = 'LGTV_WebOS::Write';
+    $hash->{ReadFn}  = 'FHEM::LGTV_WebOS::Read';
+    $hash->{WriteFn} = 'FHEM::LGTV_WebOS::Write';
 
     # Consumer
-    $hash->{SetFn}   = 'LGTV_WebOS::Set';
-    $hash->{DefFn}   = 'LGTV_WebOS::Define';
-    $hash->{UndefFn} = 'LGTV_WebOS::Undef';
-    $hash->{NotifyFn} = 'LGTV_WebOS::Notify';
-    $hash->{AttrFn}  = 'LGTV_WebOS::Attr';
+    $hash->{SetFn}   = 'FHEM::LGTV_WebOS::Set';
+    $hash->{DefFn}   = 'FHEM::LGTV_WebOS::Define';
+    $hash->{UndefFn} = 'FHEM::LGTV_WebOS::Undef';
+    $hash->{NotifyFn} = 'FHEM::LGTV_WebOS::Notify';
+    $hash->{AttrFn}  = 'FHEM::LGTV_WebOS::Attr';
     $hash->{AttrList} =
         'disable:1 '
       . 'channelGuide:1 '
@@ -82,7 +82,7 @@ sub LGTV_WebOS_Initialize($) {
     }
 }
 
-package LGTV_WebOS;
+package FHEM::LGTV_WebOS;
 
 my $missingModul = "";
 
@@ -326,8 +326,6 @@ sub TimerStatusRequest($) {
     my $hash = shift;
     my $name = $hash->{NAME};
 
-    RemoveInternalTimer( $hash, 'LGTV_WebOS::TimerStatusRequest' );
-
     readingsBeginUpdate($hash);
 
     if (    !IsDisabled($name)
@@ -352,14 +350,14 @@ sub TimerStatusRequest($) {
 
             GetAudioStatus($hash);
             InternalTimer( gettimeofday() + 2,
-                'LGTV_WebOS::GetCurrentChannel', $hash )
+                'FHEM::LGTV_WebOS::GetCurrentChannel', $hash )
               if ( ReadingsVal( $name, 'launchApp', 'TV' ) eq 'TV' );
             InternalTimer( gettimeofday() + 4,
-                'LGTV_WebOS::GetForgroundAppInfo', $hash );
+                'FHEM::LGTV_WebOS::GetForgroundAppInfo', $hash );
             InternalTimer( gettimeofday() + 6,
-                'LGTV_WebOS::Get3DStatus', $hash );
+                'FHEM::LGTV_WebOS::Get3DStatus', $hash );
             InternalTimer( gettimeofday() + 8,
-                'LGTV_WebOS::GetExternalInputList', $hash );
+                'FHEM::LGTV_WebOS::GetExternalInputList', $hash );
         }
 
     }
@@ -395,7 +393,7 @@ sub TimerStatusRequest($) {
     $hash->{helper}{device}{channelguide}{counter} =
       $hash->{helper}{device}{channelguide}{counter} + 1;
     InternalTimer( gettimeofday() + 10,
-        "LGTV_WebOS::TimerStatusRequest", $hash );
+        "FHEM::LGTV_WebOS::TimerStatusRequest", $hash );
 }
 
 sub Set($@) {
@@ -690,7 +688,7 @@ sub Read($) {
 
     $len = sysread( $hash->{CD}, $buf, 10240 );
 
-    if ( $len == 0 ) {
+    if ( defined($len) and $len == 0 ) {
 
         Close($hash);
 
@@ -1392,7 +1390,6 @@ sub GetCurrentChannel($) {
     my $hash = shift;
     my $name = $hash->{NAME};
 
-    RemoveInternalTimer( $hash, 'LGTV_WebOS::GetCurrentChannel' );
     Log3 $name, 4, "LGTV_WebOS ($name) - GetCurrentChannel: "
       . $hash->{helper}{device}{runsetcmd};
     CreateSendCommand( $hash, $lgCommands{getCurrentChannel}, undef )
@@ -1404,7 +1401,6 @@ sub GetForgroundAppInfo($) {
     my $hash = shift;
     my $name = $hash->{NAME};
 
-    RemoveInternalTimer( $hash, 'LGTV_WebOS::GetForgroundAppInfo' );
     Log3 $name, 4, "LGTV_WebOS ($name) - GetForgroundAppInfo: "
       . $hash->{helper}{device}{runsetcmd};
     CreateSendCommand( $hash, $lgCommands{getForegroundAppInfo}, undef )
@@ -1416,7 +1412,6 @@ sub GetExternalInputList($) {
     my $hash = shift;
     my $name = $hash->{NAME};
 
-    RemoveInternalTimer( $hash, 'LGTV_WebOS::GetExternalInputList' );
     Log3 $name, 4, "LGTV_WebOS ($name) - GetExternalInputList: "
       . $hash->{helper}{device}{runsetcmd};
     CreateSendCommand( $hash, $lgCommands{getExternalInputList}, undef )
@@ -1428,7 +1423,6 @@ sub Get3DStatus($) {
     my $hash = shift;
     my $name = $hash->{NAME};
 
-    RemoveInternalTimer( $hash, 'LGTV_WebOS::Get3DStatus' );
     Log3 $name, 4,
       "LGTV_WebOS ($name) - Get3DStatus: " . $hash->{helper}{device}{runsetcmd};
     CreateSendCommand( $hash, $lgCommands{get3DStatus}, undef )
@@ -1534,8 +1528,8 @@ sub Presence($) {
     my $name = $hash->{NAME};
 
     $hash->{helper}{RUNNING_PID} =
-      BlockingCall( "LGTV_WebOS::PresenceRun", $name . '|' . $hash->{HOST},
-        "LGTV_WebOS::PresenceDone", 5, "LGTV_WebOS::PresenceAborted", $hash )
+      BlockingCall( "FHEM::LGTV_WebOS::PresenceRun", $name . '|' . $hash->{HOST},
+        "FHEM::LGTV_WebOS::PresenceDone", 5, "FHEM::LGTV_WebOS::PresenceAborted", $hash )
       unless ( exists( $hash->{helper}{RUNNING_PID} ) );
 }
 
