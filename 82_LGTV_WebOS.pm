@@ -69,7 +69,7 @@ eval "use Blocking;1" or $missingModul .= "Blocking ";
 
 
 
-my $version = "2.0.10";
+my $version = "2.0.11";
 
 
 
@@ -634,9 +634,9 @@ sub LGTV_WebOS_Read($) {
     }
     
     
-    if( $buf =~ /({"type":".+}}$)/ ) {
+    if( $buf =~ /(\{"type":".+}}$)/ ) {
     
-        $buf =~ /({"type":".+}}$)/;
+        $buf =~ /(\{"type":".+}}$)/;
         $buf = $1;
         
         Log3 $name, 4, "LGTV_WebOS ($name) - received correct JSON string, start response processing: $buf";
