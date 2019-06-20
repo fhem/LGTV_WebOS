@@ -183,7 +183,7 @@ sub LGTV_WebOS_Initialize($) {
       . "pingPresence:1 "
       . "wakeOnLanMAC "
       . "wakeOnLanBroadcast "
-	  . "wakeupCmd"				 
+      . "wakeupCmd "				 
       . $readingFnAttributes;
 
     foreach my $d ( sort keys %{ $modules{LGTV_WebOS}{defptr} } ) {
