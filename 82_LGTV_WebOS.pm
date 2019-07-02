@@ -55,15 +55,84 @@ my $missingModul = "";
 
 use strict;
 use warnings;
+use FHEM::Meta;
 
 eval "use MIME::Base64;1"             or $missingModul .= "MIME::Base64 ";
 eval "use IO::Socket::INET;1"         or $missingModul .= "IO::Socket::INET ";
 eval "use Digest::SHA qw(sha1_hex);1" or $missingModul .= "Digest::SHA ";
-eval "use JSON qw(decode_json encode_json);1"   or $missingModul .= "JSON ";
 eval "use Encode qw(encode_utf8 decode_utf8);1" or $missingModul .= "Encode ";
 eval "use Blocking;1"                           or $missingModul .= "Blocking ";
 
-my $version = "2.0.11";
+# try to use JSON::MaybeXS wrapper
+#   for chance of better performance + open code
+eval {
+    require JSON::MaybeXS;
+    import JSON::MaybeXS qw( decode_json encode_json );
+    1;
+};
+
+if ($@) {
+    $@ = undef;
+
+    # try to use JSON wrapper
+    #   for chance of better performance
+    eval {
+
+        # JSON preference order
+        local $ENV{PERL_JSON_BACKEND} =
+          'Cpanel::JSON::XS,JSON::XS,JSON::PP,JSON::backportPP'
+          unless ( defined( $ENV{PERL_JSON_BACKEND} ) );
+
+        require JSON;
+        import JSON qw( decode_json encode_json );
+        1;
+    };
+
+    if ($@) {
+        $@ = undef;
+
+        # In rare cases, Cpanel::JSON::XS may
+        #   be installed but JSON|JSON::MaybeXS not ...
+        eval {
+            require Cpanel::JSON::XS;
+            import Cpanel::JSON::XS qw(decode_json encode_json);
+            1;
+        };
+
+        if ($@) {
+            $@ = undef;
+
+            # In rare cases, JSON::XS may
+            #   be installed but JSON not ...
+            eval {
+                require JSON::XS;
+                import JSON::XS qw(decode_json encode_json);
+                1;
+            };
+
+            if ($@) {
+                $@ = undef;
+
+                # Fallback to built-in JSON which SHOULD
+                #   be available since 5.014 ...
+                eval {
+                    require JSON::PP;
+                    import JSON::PP qw(decode_json encode_json);
+                    1;
+                };
+
+                if ($@) {
+                    $@ = undef;
+
+                    # Fallback to JSON::backportPP in really rare cases
+                    require JSON::backportPP;
+                    import JSON::backportPP qw(decode_json encode_json);
+                    1;
+                }
+            }
+        }
+    }
+}
 
 # Declare functions
 sub LGTV_WebOS_Initialize($);
@@ -183,13 +252,10 @@ sub LGTV_WebOS_Initialize($) {
       . "pingPresence:1 "
       . "wakeOnLanMAC "
       . "wakeOnLanBroadcast "
-      . "wakeupCmd "				 
+      . "wakeupCmd "
       . $readingFnAttributes;
 
-    foreach my $d ( sort keys %{ $modules{LGTV_WebOS}{defptr} } ) {
-        my $hash = $modules{LGTV_WebOS}{defptr}{$d};
-        $hash->{VERSION} = $version;
-    }
+    return FHEM::Meta::InitMod( __FILE__, $hash );
 }
 
 sub LGTV_WebOS_Define($$) {
@@ -197,6 +263,9 @@ sub LGTV_WebOS_Define($$) {
     my ( $hash, $def ) = @_;
 
     my @a = split( "[ \t][ \t]*", $def );
+
+    return $@ unless ( FHEM::Meta::SetInternals($hash) );
+    use version 0.60; our $VERSION = FHEM::Meta::Get( $hash, 'version' );
 
     return "too few parameters: define <name> LGTV_WebOS <HOST>" if ( @a != 3 );
     return
@@ -206,9 +275,9 @@ sub LGTV_WebOS_Define($$) {
     my $name = $a[0];
     my $host = $a[2];
 
-    $hash->{HOST}                                  = $host;
-    $hash->{VERSION}                               = $version;
-    $hash->{PARTIAL}                               = '';
+    $hash->{HOST}    = $host;
+    $hash->{VERSION} = version->parse($VERSION)->normal;
+    $hash->{PARTIAL} = '';
     $hash->{helper}{device}{channelguide}{counter} = 0;
     $hash->{helper}{device}{registered}            = 0;
     $hash->{helper}{device}{runsetcmd}             = 0;
@@ -425,21 +494,23 @@ sub LGTV_WebOS_Set($@) {
                     AttrVal( $name, 'wakeOnLanBroadcast', '255.255.255.255' )
                 );
                 return;
-            } elsif( AttrVal($name,'wakeupCmd','none') ne 'none' ) {
-				my $wakeupCmd = AttrVal($name,'wakeupCmd','none');
-				if ( $wakeupCmd =~ s/^[ \t]*\{|\}[ \t]*$//g ) {
-					Log3 $name, 4,
-					"LGTV_WebOS executing wake-up command (Perl): $wakeupCmd";
-					eval $wakeupCmd;
-					return;
-				}
-				else {
-					Log3 $name, 4,
-					"LGTV_WebOS executing wake-up command (fhem): $wakeupCmd";
-					fhem $wakeupCmd;
-					return;
-				}
-            } else {
+            }
+            elsif ( AttrVal( $name, 'wakeupCmd', 'none' ) ne 'none' ) {
+                my $wakeupCmd = AttrVal( $name, 'wakeupCmd', 'none' );
+                if ( $wakeupCmd =~ s/^[ \t]*\{|\}[ \t]*$//g ) {
+                    Log3 $name, 4,
+                      "LGTV_WebOS executing wake-up command (Perl): $wakeupCmd";
+                    eval $wakeupCmd;
+                    return;
+                }
+                else {
+                    Log3 $name, 4,
+                      "LGTV_WebOS executing wake-up command (fhem): $wakeupCmd";
+                    fhem $wakeupCmd;
+                    return;
+                }
+            }
+            else {
                 $uri = $lgCommands{powerOn};
             }
         }
@@ -1662,8 +1733,8 @@ sub LGTV_WebOS_WakeUp_Udp($@) {
 
 =pod
 =item device
-=item summary       Controls LG SmartTVs run with WebOS Operating System (in beta phase)
-=item summary_DE    Steuert LG SmartTVs mit WebOS Betriebssystem (derzeit Beta Status)
+=item summary       Controls LG SmartTVs run with WebOS Operating System
+=item summary_DE    Steuert LG SmartTVs mit WebOS Betriebssystem
 
 =begin html
 
@@ -1910,5 +1981,54 @@ sub LGTV_WebOS_WakeUp_Udp($@) {
     </ul>
 </ul>
 =end html_DE
+
+=for :application/json;q=META.json 83_LGTV_WebOS.pm
+{
+  "abstract": "Module for Controls LG SmartTVs run with WebOS Operating System",
+  "x_lang": {
+    "de": {
+      "abstract": "Modul zur Steuerung von LG SmartTVs mit WebOS Betriebssystem"
+    }
+  },
+  "keywords": [
+    "fhem-mod-device",
+    "fhem-core",
+    "Multimedia",
+    "TV",
+    "LG"
+  ],
+  "release_status": "under develop",
+  "license": "GPL_2",
+  "version": "v2.2.0",
+  "x_developmentversion": "v2.1.99",
+  "author": [
+    "Marko Oldenburg <leongaultier@gmail.com>"
+  ],
+  "x_fhem_maintainer": [
+    "CoolTux"
+  ],
+  "x_fhem_maintainer_github": [
+    "LeonGaultier"
+  ],
+  "prereqs": {
+    "runtime": {
+      "requires": {
+        "FHEM": 5.00918799,
+        "perl": 5.016, 
+        "Meta": 1,
+        "JSON": 1,
+        "Date::Parse": 0
+      },
+      "recommends": {
+        "JSON": 0
+      },
+      "suggests": {
+        "Cpanel::JSON::XS": 0,
+        "JSON::XS": 0
+      }
+    }
+  }
+}
+=end :application/json;q=META.json
 
 =cut
