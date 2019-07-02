@@ -1982,7 +1982,7 @@ sub LGTV_WebOS_WakeUp_Udp($@) {
 </ul>
 =end html_DE
 
-=for :application/json;q=META.json 83_LGTV_WebOS.pm
+=for :application/json;q=META.json 82_LGTV_WebOS.pm
 {
   "abstract": "Module for Controls LG SmartTVs run with WebOS Operating System",
   "x_lang": {
@@ -1997,10 +1997,9 @@ sub LGTV_WebOS_WakeUp_Udp($@) {
     "TV",
     "LG"
   ],
-  "release_status": "under develop",
+  "release_status": "stable",
   "license": "GPL_2",
-  "version": "v2.2.0",
-  "x_developmentversion": "v2.1.99",
+  "version": "v3.2.0",
   "author": [
     "Marko Oldenburg <leongaultier@gmail.com>"
   ],
