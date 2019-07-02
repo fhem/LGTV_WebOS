@@ -183,6 +183,7 @@ sub LGTV_WebOS_Initialize($) {
       . "pingPresence:1 "
       . "wakeOnLanMAC "
       . "wakeOnLanBroadcast "
+      . "wakeupCmd "				 
       . $readingFnAttributes;
 
     foreach my $d ( sort keys %{ $modules{LGTV_WebOS}{defptr} } ) {
@@ -424,8 +425,21 @@ sub LGTV_WebOS_Set($@) {
                     AttrVal( $name, 'wakeOnLanBroadcast', '255.255.255.255' )
                 );
                 return;
-            }
-            else {
+            } elsif( AttrVal($name,'wakeupCmd','none') ne 'none' ) {
+				my $wakeupCmd = AttrVal($name,'wakeupCmd','none');
+				if ( $wakeupCmd =~ s/^[ \t]*\{|\}[ \t]*$//g ) {
+					Log3 $name, 4,
+					"LGTV_WebOS executing wake-up command (Perl): $wakeupCmd";
+					eval $wakeupCmd;
+					return;
+				}
+				else {
+					Log3 $name, 4,
+					"LGTV_WebOS executing wake-up command (fhem): $wakeupCmd";
+					fhem $wakeupCmd;
+					return;
+				}
+            } else {
                 $uri = $lgCommands{powerOn};
             }
         }
@@ -1747,6 +1761,12 @@ sub LGTV_WebOS_WakeUp_Udp($@) {
             Broadcast Address of the Network - wakeOnLanBroadcast &lt;network&gt;.255
         </ul>
     </ul>
+	<ul>
+        <ul>
+            <li>wakeupCmd</li>
+            Set a command to be executed when turning on an absent device. Can be an FHEM command or Perl command in {}.
+        </ul>
+    </ul> 
 </ul>
 
 =end html
@@ -1854,6 +1874,14 @@ sub LGTV_WebOS_WakeUp_Udp($@) {
             </ul>
         </ul>
     </ul>
+	<ul>
+        <ul>
+            <ul>
+                <li>wakeupCmd</li>
+                Befehl zum Einschalten des LG TV. M&ouml;glich ist ein FHEM Befehl oder Perl in {}.
+            </ul>
+        </ul>        
+    </ul>																				   
     <p><br /><br /><strong>Generierte Readings/Events:</strong></p>
     <ul>
         <ul>
