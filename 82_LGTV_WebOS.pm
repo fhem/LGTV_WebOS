@@ -1197,7 +1197,8 @@ sub LGTV_WebOS_WriteReadings {
         }
         elsif ( $decode_json->{type} eq 'error' ) {
 
-            $response = "error - $decode_json->{error}";
+            $response = "error - $decode_json->{error}"
+              if ( $decode_json->{error} ne '404 no such service or method' );
 
             if (   $decode_json->{error} eq '401 insufficient permissions'
                 or $decode_json->{error} eq
