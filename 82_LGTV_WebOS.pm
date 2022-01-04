@@ -53,7 +53,7 @@ package main;
 
 use strict;
 use warnings;
-use experimental qw( switch );
+use experimental qw /switch/;
 
 use FHEM::Meta;
 
@@ -2068,7 +2068,7 @@ sub LGTV_WebOS_WakeUp_Udp {
   ],
   "release_status": "stable",
   "license": "GPL_2",
-  "version": "v3.4.0",
+  "version": "v3.4.1",
   "author": [
     "Marko Oldenburg <fhemdevelopment@cooltux.net>"
   ],
