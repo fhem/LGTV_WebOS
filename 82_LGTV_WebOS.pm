@@ -410,46 +410,46 @@ sub LGTV_WebOS_Set {
     my $uri;
     my %payload;
 
-    if ( $cmd eq 'connect' ) {
-        return "usage: connect" if ( @args != 0 );
+    given ($cmd) {
+        when ('connect') {
+            return "usage: connect" if ( @args != 0 );
 
-        LGTV_WebOS_Open($hash);
+            LGTV_WebOS_Open($hash);
 
-        return;
+            return;
 
-    }
-    elsif ( $cmd eq 'clearInputList' ) {
-        return "usage: clearInputList" if ( @args != 0 );
+        }
+        when ('clearInputList') {
+            return "usage: clearInputList" if ( @args != 0 );
 
-        delete $hash->{helper}{device}{inputs};
-        delete $hash->{helper}{device}{inputapps};
+            delete $hash->{helper}{device}{inputs};
+            delete $hash->{helper}{device}{inputapps};
 
-        return;
+            return;
 
-    }
-    elsif ( $cmd eq 'pairing' ) {
-        return "usage: pairing" if ( @args != 0 );
+        }
+        when ('pairing') {
+            return "usage: pairing" if ( @args != 0 );
 
-        LGTV_WebOS_Pairing($hash);
+            LGTV_WebOS_Pairing($hash);
 
-        return;
+            return;
 
-    }
-    elsif ( $cmd eq 'screenMsg' ) {
-        return "usage: screenMsg <message>" if ( @args < 1 );
+        }
+        when ('screenMsg') {
+            return "usage: screenMsg <message>" if ( @args < 1 );
 
-        my $msg = join( " ", @args );
-        $payload{ $lgCommands{$cmd}->[1] } = decode_utf8($msg);
-        $uri = $lgCommands{$cmd}->[0];
+            my $msg = join( " ", @args );
+            $payload{ $lgCommands{$cmd}->[1] } = decode_utf8($msg);
+            $uri = $lgCommands{$cmd}->[0];
 
-    }
-    elsif ( $cmd eq 'on' || $cmd eq 'off' ) {
-        return "usage: on/off" if ( @args != 0 );
+        }
+        when ('off') {
+            return "usage: on/off" if ( @args != 0 );
 
-        if ( $cmd eq 'off' ) {
             $uri = $lgCommands{powerOff};
         }
-        elsif ( $cmd eq 'on' ) {
+        when ('on') {
             if ( AttrVal( $name, 'wakeOnLanMAC', 'none' ) ne 'none' ) {
                 LGTV_WebOS_WakeUp_Udp(
                     $hash,
@@ -481,156 +481,157 @@ sub LGTV_WebOS_Set {
                 $uri = $lgCommands{powerOn};
             }
         }
+        when ('3D') {
+            return "usage: 3D on/off" if ( @args != 1 );
 
-    }
-    elsif ( $cmd eq '3D' ) {
-        return "usage: 3D on/off" if ( @args != 1 );
-
-        if ( $args[0] eq 'off' ) {
-            $uri = $lgCommands{'3DOff'};
-        }
-        elsif ( $args[0] eq 'on' ) {
-            $uri = $lgCommands{'3DOn'};
-        }
-
-    }
-    elsif ( $cmd eq 'mute' ) {
-        return "usage: mute" if ( @args != 1 );
-
-        if ( $args[0] eq 'off' ) {
-
-            $uri = $lgCommands{volumeDown}->[0];
+            if ( $args[0] eq 'off' ) {
+                $uri = $lgCommands{'3DOff'};
+            }
+            elsif ( $args[0] eq 'on' ) {
+                $uri = $lgCommands{'3DOn'};
+            }
 
         }
-        elsif ( $args[0] eq 'on' ) {
+        when ('mute') {
+            return "usage: mute" if ( @args != 1 );
 
-            $payload{ $lgCommands{$cmd}->[1] } = 'true';
+            if ( $args[0] eq 'off' ) {
+
+                $uri = $lgCommands{volumeDown}->[0];
+
+            }
+            elsif ( $args[0] eq 'on' ) {
+
+                $payload{ $lgCommands{$cmd}->[1] } = 'true';
+                $uri = $lgCommands{$cmd}->[0];
+            }
+
+        }
+        when ('volume') {
+            return "usage: volume" if ( @args != 1 );
+
+            $payload{ $lgCommands{$cmd}->[1] } = int( join( " ", @args ) );
             $uri = $lgCommands{$cmd}->[0];
+
         }
+        when ('launchApp') {
+            return "usage: launchApp" if ( @args != 1 );
 
-    }
-    elsif ( $cmd eq 'volume' ) {
-        return "usage: volume" if ( @args != 1 );
+            $payload{ $lgCommands{$cmd}->[1] } =
+              $openApps{ join( " ", @args ) };
+            $uri = $lgCommands{$cmd}->[0];
 
-        $payload{ $lgCommands{$cmd}->[1] } = int( join( " ", @args ) );
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('input') {
+            return "usage: input" if ( @args != 1 );
 
-    }
-    elsif ( $cmd eq 'launchApp' ) {
-        return "usage: launchApp" if ( @args != 1 );
+            my $inputLabel = join( " ", @args );
+            $payload{ $lgCommands{launchApp}->[1] } =
+              $hash->{helper}{device}{inputs}{$inputLabel};
+            $uri = $lgCommands{launchApp}->[0];
 
-        $payload{ $lgCommands{$cmd}->[1] } = $openApps{ join( " ", @args ) };
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('volumeUp') {
+            return "usage: volumeUp" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'input' ) {
-        return "usage: input" if ( @args != 1 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        my $inputLabel = join( " ", @args );
-        $payload{ $lgCommands{launchApp}->[1] } =
-          $hash->{helper}{device}{inputs}{$inputLabel};
-        $uri = $lgCommands{launchApp}->[0];
+        }
+        when ('volumeDown') {
+            return "usage: volumeDown" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'volumeUp' ) {
-        return "usage: volumeUp" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('channelDown') {
+            return "usage: channelDown" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'volumeDown' ) {
-        return "usage: volumeDown" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('channelUp') {
+            return "usage: channelUp" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'channelDown' ) {
-        return "usage: channelDown" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('channel') {
+            return "usage: channel" if ( @args != 1 );
 
-    }
-    elsif ( $cmd eq 'channelUp' ) {
-        return "usage: channelUp" if ( @args != 0 );
+            $payload{ $lgCommands{openChannel}->[1] } = join( " ", @args );
+            $uri = $lgCommands{openChannel}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('getServiceList') {
+            return "usage: getServiceList" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'channel' ) {
-        return "usage: channel" if ( @args != 1 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $payload{ $lgCommands{openChannel}->[1] } = join( " ", @args );
-        $uri = $lgCommands{openChannel}->[0];
+        }
+        when ('getChannelList') {
+            return "usage: getChannelList" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'getServiceList' ) {
-        return "usage: getServiceList" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('getAppList') {
+            return "usage: getAppList" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'getChannelList' ) {
-        return "usage: getChannelList" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('getExternalInputList') {
+            return "usage: getExternalInputList" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'getAppList' ) {
-        return "usage: getAppList" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('play') {
+            return "usage: play" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'getExternalInputList' ) {
-        return "usage: getExternalInputList" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('stop') {
+            return "usage: stop" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'play' ) {
-        return "usage: play" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('fastForward') {
+            return "usage: fastForward" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'stop' ) {
-        return "usage: stop" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('rewind') {
+            return "usage: rewind" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'fastForward' ) {
-        return "usage: fastForward" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
+        }
+        when ('pause') {
+            return "usage: pause" if ( @args != 0 );
 
-    }
-    elsif ( $cmd eq 'rewind' ) {
-        return "usage: rewind" if ( @args != 0 );
+            $uri = $lgCommands{$cmd}->[0];
 
-        $uri = $lgCommands{$cmd}->[0];
-
-    }
-    elsif ( $cmd eq 'pause' ) {
-        return "usage: pause" if ( @args != 0 );
-
-        $uri = $lgCommands{$cmd}->[0];
-
-    }
-    else {
-        my $list = "";
-        $list .=
+        }
+        default {
+            my $list = "";
+            $list .=
 'connect:noArg pairing:noArg screenMsg mute:on,off volume:slider,0,1,100 volumeUp:noArg volumeDown:noArg channelDown:noArg channelUp:noArg getServiceList:noArg on:noArg off:noArg';
-        $list .=
+            $list .=
 ' 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg channel';
-        $list .= ' launchApp:' . join( ',', => map qq{$_} => keys %openApps );
-        $list .= ' input:'
-          . join( ',',
-            => map qq{$_} => keys %{ $hash->{helper}{device}{inputs} } )
-          if ( defined( $hash->{helper}{device}{inputs} )
-            && ref( $hash->{helper}{device}{inputs} ) eq "HASH" );
+            $list .=
+              ' launchApp:' . join( ',', => map qq{$_} => keys %openApps );
+            $list .= ' input:'
+              . join( ',',
+                => map qq{$_} => keys %{ $hash->{helper}{device}{inputs} } )
+              if ( defined( $hash->{helper}{device}{inputs} )
+                && ref( $hash->{helper}{device}{inputs} ) eq "HASH" );
 
-        return "Unknown argument $cmd, choose one of $list";
+            return "Unknown argument $cmd, choose one of $list";
+        }
     }
 
     $hash->{helper}{device}{runsetcmd} = $hash->{helper}{device}{runsetcmd} + 1;
@@ -2022,7 +2023,7 @@ sub LGTV_WebOS_WakeUp_Udp {
   ],
   "release_status": "stable",
   "license": "GPL_2",
-  "version": "v3.3.5",
+  "version": "v3.4.0",
   "author": [
     "Marko Oldenburg <fhemdevelopment@cooltux.net>"
   ],
