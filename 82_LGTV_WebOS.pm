@@ -51,18 +51,20 @@
 
 package main;
 
-my $missingModul = "";
-
 use strict;
 use warnings;
+use experimental qw( switch );
+
 use FHEM::Meta;
 
-eval { use MIME::Base64;     1 } or $missingModul .= "MIME::Base64 ";
-eval { use IO::Socket::INET; 1 } or $missingModul .= "IO::Socket::INET ";
-eval { use Digest::SHA qw(sha1_hex); 1 } or $missingModul .= "Digest::SHA ";
-eval { use Encode qw(encode_utf8 decode_utf8); 1 }
+my $missingModul = "";
+
+eval { require MIME::Base64;     1 } or $missingModul .= "MIME::Base64 ";
+eval { require IO::Socket::INET; 1 } or $missingModul .= "IO::Socket::INET ";
+eval { use Digest::SHA qw /sha1_hex/; 1 } or $missingModul .= "Digest::SHA ";
+eval { use Encode qw /encode_utf8 decode_utf8/; 1 }
   or $missingModul .= "Encode ";
-eval { use Blocking; 1 } or $missingModul .= "Blocking ";
+eval { require Blocking; 1 } or $missingModul .= "Blocking ";
 
 # try to use JSON::MaybeXS wrapper
 #   for chance of better performance + open code
@@ -221,11 +223,14 @@ sub LGTV_WebOS_Initialize {
 
 sub LGTV_WebOS_Define {
     my ( $hash, $def ) = @_;
-
-    my @a = split( "[ \t][ \t]*", $def );
+    my $version;
 
     return $@ unless ( FHEM::Meta::SetInternals($hash) );
-    use version 0.60; our $VERSION = FHEM::Meta::Get( $hash, 'version' );
+
+    $version = FHEM::Meta::Get( $hash, 'version' );
+    our $VERSION = $version;
+
+    my @a = split( "[ \t][ \t]*", $def );
 
     return "too few parameters: define <name> LGTV_WebOS <HOST>" if ( @a != 3 );
     return
@@ -404,8 +409,6 @@ sub LGTV_WebOS_Set {
 
     my $uri;
     my %payload;
-    my $inputs;
-    my @inputs;
 
     if ( $cmd eq 'connect' ) {
         return "usage: connect" if ( @args != 0 );
@@ -457,10 +460,14 @@ sub LGTV_WebOS_Set {
             }
             elsif ( AttrVal( $name, 'wakeupCmd', 'none' ) ne 'none' ) {
                 my $wakeupCmd = AttrVal( $name, 'wakeupCmd', 'none' );
-                if ( $wakeupCmd =~ s/^[ \t]*\{|\}[ \t]*$//g ) {
+                if ( $wakeupCmd =~ s/^[ \t]*\{|\}[ \t]*$//xg ) {
                     Log3 $name, 4,
                       "LGTV_WebOS executing wake-up command (Perl): $wakeupCmd";
-                    eval $wakeupCmd;
+                    eval { $wakeupCmd } or do {
+                        Log3 $name, 2,
+"LGTV_WebOS executing wake-up command (Perl): $wakeupCmd failed";
+                        return;
+                    };
                     return;
                 }
                 else {
@@ -639,7 +646,7 @@ sub LGTV_WebOS_Open {
 
     Log3 $name, 4, "LGTV_WebOS ($name) - Baue Socket Verbindung auf";
 
-    my $socket = new IO::Socket::INET(
+    my $socket = IO::Socket::INET->new(
         PeerHost  => $host,
         PeerPort  => $port,
         Proto     => 'tcp',
@@ -738,9 +745,9 @@ sub LGTV_WebOS_Read {
         return;
     }
 
-    if ( $buf =~ /(\{"type":".+}}$)/ ) {
+    if ( $buf =~ /(\{"type":".+}}$)/x ) {
 
-        $buf =~ /(\{"type":".+}}$)/;
+        $buf =~ /(\{"type":".+}}$)/x;
         $buf = $1;
 
         Log3 $name, 4,
@@ -748,7 +755,7 @@ sub LGTV_WebOS_Read {
         LGTV_WebOS_ResponseProcessing( $hash, $buf );
 
     }
-    elsif ( $buf =~ /HTTP\/1.1 101 Switching Protocols/ ) {
+    elsif ( $buf =~ /HTTP\/1.1 101 Switching Protocols/x ) {
 
         Log3 $name, 4,
 "LGTV_WebOS ($name) - received HTTP data string, start response processing: $buf";
@@ -811,7 +818,7 @@ sub LGTV_WebOS_ProcessRead {
           . $tail;
 
         LGTV_WebOS_ResponseProcessing( $hash, $json )
-          unless ( !defined($tail) && not($tail) );
+          if ( defined($tail) && ($tail) );
 
         ( $json, $tail ) = LGTV_WebOS_ParseMsg( $hash, $tail );
 
@@ -871,7 +878,7 @@ sub LGTV_WebOS_ResponseProcessing {
 
     ########################
     ### Response has HTML Header
-    if ( $response =~ /HTTP\/1.1 101 Switching Protocols/ ) {
+    if ( $response =~ /HTTP\/1.1 101 Switching Protocols/x ) {
 
         my $data   = $response;
         my $header = LGTV_WebOS_Header2Hash($data);
@@ -913,10 +920,10 @@ sub LGTV_WebOS_ResponseProcessing {
         return;
     }
 
-    elsif ( $response =~ m/^{"type":".+}}$/ ) {
+    elsif ( $response =~ m/^{"type":".+}}$/x ) {
 
         return Log3 $name, 4, "LGTV_WebOS ($name) - garbage after JSON object"
-          if ( $response =~ m/^{"type":".+}}.+{"type":".+/ );
+          if ( $response =~ m/^{"type":".+}}.+{"type":".+/x );
 
         Log3 $name, 4,
           "LGTV_WebOS ($name) - JSON detected, run LGTV_WebOS_WriteReadings";
@@ -926,7 +933,7 @@ sub LGTV_WebOS_ResponseProcessing {
         Log3 $name, 4, "LGTV_WebOS ($name) - Corrected JSON String: $json"
           if ($json);
 
-        if ( !defined($json) || not($json) ) {
+        if ( !defined($json) || !($json) ) {
 
             Log3 $name, 4, "LGTV_WebOS ($name) - Corrected JSON String empty";
             return;
@@ -952,9 +959,7 @@ sub LGTV_WebOS_WriteReadings {
     my ( $hash, $decode_json ) = @_;
 
     my $name = $hash->{NAME};
-    my $mute;
     my $response;
-    my %channelList;
 
     Log3 $name, 4, "LGTV_WebOS ($name) - Beginn Readings writing";
 
@@ -980,23 +985,24 @@ sub LGTV_WebOS_WriteReadings {
         for my $devices ( @{ $decode_json->{payload}{devices} } ) {
 
             if (
-                not
-                defined( $hash->{helper}{device}{inputs}{ $devices->{label} } )
+                !defined(
+                    $hash->{helper}{device}{inputs}{ $devices->{label} }
+                )
                 || !defined(
                     $hash->{helper}{device}{inputapps}{ $devices->{appId} }
                 )
               )
             {
 
-                $hash->{helper}{device}{inputs}{ $devices->{label} } =
-                  $devices->{appId};
+                $hash->{helper}{device}{inputs}
+                  { makeDeviceName( $devices->{label} ) } = $devices->{appId};
                 $hash->{helper}{device}{inputapps}{ $devices->{appId} } =
-                  $devices->{label};
+                  makeDeviceName( $devices->{label} );
             }
 
             readingsBulkUpdateIfChanged(
                 $hash,
-                'extInput_' . $devices->{label},
+                'extInput_' . makeDeviceName( $devices->{label} ),
                 'connect_' . $devices->{connected}
             );
         }
@@ -1005,7 +1011,7 @@ sub LGTV_WebOS_WriteReadings {
     elsif ( ref( $decode_json->{payload}{programList} ) eq "ARRAY"
         && scalar( @{ $decode_json->{payload}{programList} } ) > 0 )
     {
-        use Date::Parse;
+        require Date::Parse;
         my $count = 0;
         for my $programList ( @{ $decode_json->{payload}{programList} } ) {
 
@@ -1130,8 +1136,8 @@ sub LGTV_WebOS_WriteReadings {
 
         if (
             (
-                $decode_json->{payload}{appId} =~ /com.webos.app.externalinput/
-                || $decode_json->{payload}{appId} =~ /com.webos.app.hdmi/
+                $decode_json->{payload}{appId} =~ /com.webos.app.externalinput/x
+                || $decode_json->{payload}{appId} =~ /com.webos.app.hdmi/x
             )
             && defined(
                 $hash->{helper}{device}{inputapps}
@@ -1252,8 +1258,6 @@ sub LGTV_WebOS_Pairing {
     my $hash = shift;
     my $name = $hash->{NAME};
 
-    my $lgKey;
-
     Log3 $name, 4, "LGTV_WebOS ($name) - HASH handshakePayload";
 
     my %handshakePayload = (
@@ -1334,7 +1338,6 @@ sub LGTV_WebOS_CreateSendCommand {
     my ( $hash, $uri, $payload, $type ) = @_;
 
     my $name = $hash->{NAME};
-    my $err;
 
     $type = 'request' if ( !defined($type) );
 
@@ -1366,28 +1369,27 @@ sub LGTV_WebOS_Hybi10Encode {
     my $frame         = "";
     my $payloadLength = length($payload);
 
-    if ( $type eq "text" ) {
+    given ($type) {
+        when ('text') {
 
-        # first byte indicates FIN, Text-Frame (10000001):
-        $frameHead[0] = 129;
+            # first byte indicates FIN, Text-Frame (10000001):
+            $frameHead[0] = 129;
+        }
+        when ('close') {
 
-    }
-    elsif ( $type eq "close" ) {
+            # first byte indicates FIN, Close Frame(10001000):
+            $frameHead[0] = 136;
+        }
+        when ('ping') {
 
-        # first byte indicates FIN, Close Frame(10001000):
-        $frameHead[0] = 136;
+            # first byte indicates FIN, Ping frame (10001001):
+            $frameHead[0] = 137;
+        }
+        when ('pong') {
 
-    }
-    elsif ( $type eq "ping" ) {
-
-        # first byte indicates FIN, Ping frame (10001001):
-        $frameHead[0] = 137;
-
-    }
-    elsif ( $type eq "pong" ) {
-
-        # first byte indicates FIN, Pong frame (10001010):
-        $frameHead[0] = 138;
+            # first byte indicates FIN, Pong frame (10001010):
+            $frameHead[0] = 138;
+        }
     }
 
     # set mask and payload length (using 1, 3 or 9 bytes)
@@ -1542,21 +1544,21 @@ sub LGTV_WebOS_ParseMsg {
     my $hash   = shift;
     my $buffer = shift;
 
-    my $name  = $hash->{NAME};
-    my $open  = 0;
-    my $close = 0;
-    my $msg   = '';
-    my $tail  = '';
+    my $name      = $hash->{NAME};
+    my $jsonopen  = 0;
+    my $jsonclose = 0;
+    my $msg       = '';
+    my $tail      = '';
 
     if ($buffer) {
         for my $c ( split //, $buffer ) {
-            if ( $open == $close && $open > 0 ) {
+            if ( $jsonopen == $jsonclose && $jsonopen > 0 ) {
                 $tail .= $c;
                 Log3 $name, 5,
-                  "LGTV_WebOS ($name) - $open == $close && $open > 0";
+"LGTV_WebOS ($name) - $jsonopen == $jsonclose && $jsonopen > 0";
 
             }
-            elsif ( ( $open == $close ) && ( $c ne '{' ) ) {
+            elsif ( ( $jsonopen == $jsonclose ) && ( $c ne '{' ) ) {
 
                 Log3 $name, 5,
                   "LGTV_WebOS ($name) - Garbage character before message: "
@@ -1567,19 +1569,19 @@ sub LGTV_WebOS_ParseMsg {
 
                 if ( $c eq '{' ) {
 
-                    $open++;
+                    $jsonopen++;
 
                 }
                 elsif ( $c eq '}' ) {
 
-                    $close++;
+                    $jsonclose++;
                 }
 
                 $msg .= $c;
             }
         }
 
-        if ( $open != $close ) {
+        if ( $jsonopen != $jsonclose ) {
 
             $tail = $msg;
             $msg  = '';
@@ -1598,7 +1600,7 @@ sub LGTV_WebOS_Header2Hash {
         my ( $key, $value ) = split( ": ", $line );
         next if ( !$value );
 
-        $value =~ s/^ //;
+        $value =~ s/^ //x;
         $hash{$key} = $value;
     }
 
@@ -1643,7 +1645,10 @@ sub LGTV_WebOS_PresenceRun {
           "LGTV_WebOS ($name) - ping command returned with output:\n$tmp";
         $response = "$name|"
           . (
-            ( $tmp =~ /\d+ [Bb]ytes (from|von)/ && !$tmp =~ /[Uu]nreachable/ )
+            (
+                $tmp =~ /\d+ [Bb]ytes (from|von)/x
+                  && !$tmp =~ /[Uu]nreachable/x
+            )
             ? "present"
             : "absent"
           );
@@ -1714,9 +1719,9 @@ sub LGTV_WebOS_WakeUp_Udp {
     my ( $hash, $mac_addr, $host, $port ) = @_;
     my $name = $hash->{NAME};
 
-    $port = 9 if ( !defined $port || $port !~ /^\d+$/ );
+    $port = 9 if ( !defined $port || $port !~ /^\d+$/x );
 
-    my $sock = new IO::Socket::INET( Proto => 'udp' ) or die "socket : $!";
+    my $sock = IO::Socket::INET->new( Proto => 'udp' ) or warn "socket : $!\n";
     if ( !$sock ) {
         Log3 $name, 3,
           "Sub LGTV_WebOS_WakeUp_Udp ($name) - Can't create WOL socket";
@@ -1725,12 +1730,13 @@ sub LGTV_WebOS_WakeUp_Udp {
 
     my $ip_addr   = inet_aton($host);
     my $sock_addr = sockaddr_in( $port, $ip_addr );
-    $mac_addr =~ s/://g;
+    $mac_addr =~ s/://xg;
     my $packet =
       pack( 'C6H*', 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, $mac_addr x 16 );
 
-    setsockopt( $sock, SOL_SOCKET, SO_BROADCAST, 1 ) or die "setsockopt : $!";
-    send( $sock, $packet, 0, $sock_addr )            or die "send : $!";
+    setsockopt( $sock, SOL_SOCKET, SO_BROADCAST, 1 )
+      or warn "setsockopt : $!\n";
+    send( $sock, $packet, 0, $sock_addr ) or warn "send : $!\n";
     close($sock);
 
     return 1;
@@ -1951,6 +1957,14 @@ sub LGTV_WebOS_WakeUp_Udp {
             <ul>
                 <li>wakeOnLanBroadcast</li>
                 Broadcast Netzwerkadresse - wakeOnLanBroadcast &lt;netzwerk&gt;.255
+            </ul>
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <ul>
+                <li>pingPresence</li>
+                M&ouml;gliche Werte: 0 =&gt; presence via ping deaktivert, 1 =&gt; presence via ping aktiviert
             </ul>
         </ul>
     </ul>
