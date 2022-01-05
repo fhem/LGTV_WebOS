@@ -1691,7 +1691,7 @@ sub LGTV_WebOS_PresenceRun {
     if ( defined($tmp) && $tmp ne "" ) {
 
         chomp $tmp;
-        Log3 $name, 5,
+        Log3 $name, 4,
           "LGTV_WebOS ($name) - ping command returned with output:\n$tmp";
         $response = "$name|"
           . (
