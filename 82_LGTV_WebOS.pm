@@ -216,6 +216,7 @@ sub LGTV_WebOS_Initialize {
       . "wakeOnLanMAC "
       . "wakeOnLanBroadcast "
       . "wakeupCmd "
+      . "keepAliveCheckTime "
       . $readingFnAttributes;
 
     return FHEM::Meta::InitMod( __FILE__, $hash );
@@ -712,7 +713,10 @@ sub LGTV_WebOS_SocketKeepAlive {
     my $hash = shift;
     my $name = $hash->{NAME};
 
-    if ( int( gettimeofday() ) - int( $hash->{helper}->{lastResponse} ) > 2 ) {
+    if (
+        int( gettimeofday() ) - int( $hash->{helper}->{lastResponse} ) >
+        AttrVal( $hash, 'keepAliveCheckTime', 2 ) )
+    {
         LGTV_WebOS_SocketClosePresenceAbsent( $hash, 'absent' );
         Log3 $name, 3,
 "LGTV_WebOS ($name) - KeepAlive It looks like there no Data more response";
