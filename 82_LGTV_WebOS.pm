@@ -715,7 +715,7 @@ sub LGTV_WebOS_SocketKeepAlive {
 
     if (
         int( gettimeofday() ) - int( $hash->{helper}->{lastResponse} ) >
-        AttrVal( $hash, 'keepAliveCheckTime', 2 ) )
+        AttrVal( $hash, 'keepAliveCheckTime', 10 ) )
     {
         LGTV_WebOS_SocketClosePresenceAbsent( $hash, 'absent' );
         Log3 $name, 3,
