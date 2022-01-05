@@ -1712,10 +1712,7 @@ sub LGTV_WebOS_PresenceRun {
             "LGTV_WebOS ($name) - ping command returned with output:\n$tmp" );
         $response = "$name|"
           . (
-            (
-                $tmp =~ /\d+ [Bb]ytes (from|von)/x
-                  && !$tmp =~ /[Uu]nreachable/x
-            )
+            ( $tmp =~ /\d+ [Bb]ytes (from|von)/x && $tmp !~ /[Uu]nreachable/x )
             ? "present"
             : "absent"
           );
