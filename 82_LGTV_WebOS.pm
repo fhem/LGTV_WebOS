@@ -394,7 +394,9 @@ sub LGTV_WebOS_TimerStatusRequest {
     InternalTimer( gettimeofday() + 10, "LGTV_WebOS_TimerStatusRequest",
         $hash );
 
-    LGTV_WebOS_SocketKeepAlive($hash);    # Check Socket KeepAlive
+    LGTV_WebOS_SocketKeepAlive($hash)
+      if ( AttrVal( $name, 'keepAliveCheckTime', 0 ) > 0 )
+      ;    # Check Socket KeepAlive
 
     return;
 }
@@ -713,7 +715,7 @@ sub LGTV_WebOS_SocketKeepAlive {
 
     if (
         int( gettimeofday() ) - int( $hash->{helper}->{lastResponse} ) >
-        AttrVal( $name, 'keepAliveCheckTime', 10 ) )
+        AttrVal( $name, 'keepAliveCheckTime', 0 ) )
     {
         LGTV_WebOS_SocketClosePresenceAbsent( $hash, 'absent' );
         Log3( $name, 3,
