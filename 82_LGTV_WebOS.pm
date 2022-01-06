@@ -54,9 +54,13 @@ my $missingModul = "";
 
 eval { require MIME::Base64;     1 } or $missingModul .= "MIME::Base64 ";
 eval { require IO::Socket::INET; 1 } or $missingModul .= "IO::Socket::INET ";
+
+## no critic (Conditional "use" statement. Use "require" to conditionally include a module (Modules::ProhibitConditionalUseStatements))
 eval { use Digest::SHA qw /sha1_hex/; 1 } or $missingModul .= "Digest::SHA ";
 eval { use Encode qw /encode_utf8 decode_utf8/; 1 }
   or $missingModul .= "Encode ";
+## use critic
+
 eval { require Blocking; 1 } or $missingModul .= "Blocking ";
 
 # try to use JSON::MaybeXS wrapper
@@ -401,7 +405,8 @@ sub LGTV_WebOS_TimerStatusRequest {
     return;
 }
 
-sub LGTV_WebOS_Set {
+sub LGTV_WebOS_Set
+{          ## no critic (Subroutine "LGTV_WebOS_Set" with high complexity score)
     my ( $hash, $name, $cmd, @args ) = @_;
     my ( $arg, @params ) = @args;
 
@@ -624,10 +629,13 @@ sub LGTV_WebOS_Set {
             $list .=
 ' 3D:on,off stop:noArg play:noArg pause:noArg rewind:noArg fastForward:noArg clearInputList:noArg channel';
             $list .=
+              ## no critic (Expression form of map. See page 169 of PBP)
               ' launchApp:' . join( ',', => map qq{$_} => keys %openApps );
-            $list .= ' input:'
-              . join( ',',
-                => map qq{$_} => keys %{ $hash->{helper}{device}{inputs} } )
+            $list .= ' input:' . join(
+                ',',
+                ## no critic (Expression form of map. See page 169 of PBP)
+                => map qq{$_} => keys %{ $hash->{helper}{device}{inputs} }
+              )
               if ( defined( $hash->{helper}{device}{inputs} )
                 && ref( $hash->{helper}{device}{inputs} ) eq "HASH" );
 
@@ -754,7 +762,9 @@ sub LGTV_WebOS_Read {
     if ( $buf =~ /(\{"type":".+}}$)/x ) {
 
         $buf =~ /(\{"type":".+}}$)/x;
+        ## no critic (Capture variable used outside conditional. See page 253 of PBP)
         $buf = $1;
+        ## use critic
 
         Log3( $name, 4,
 "LGTV_WebOS ($name) - received correct JSON string, start response processing: $buf"
@@ -1703,19 +1713,20 @@ sub LGTV_WebOS_PresenceRun {
     my $tmp;
     my $response;
 
-    $tmp = qx(ping -c 3 -w 2 $host 2>&1);
+    $tmp = qx(ping -c 3 -w 2 $host 2>&1);  ## no critic (Backtick operator used)
 
     if ( defined($tmp) && $tmp ne "" ) {
 
         chomp $tmp;
         Log3( $name, 4,
             "LGTV_WebOS ($name) - ping command returned with output:\n$tmp" );
-        $response = "$name|"
-          . (
-            ( $tmp =~ /\d+ [Bb]ytes (from|von)/x && $tmp !~ /[Uu]nreachable/x )
-            ? "present"
-            : "absent"
-          );
+        $response = $name . '|' . (
+            $tmp =~
+              /\d+ [Bb]ytes (from|von)/ ## no critic (Regular expression without "/x")
+              && $tmp !~ /[Uu]nreachable/x
+            ? 'present'
+            : 'absent'
+        );
 
     }
     else {
@@ -1903,6 +1914,12 @@ sub LGTV_WebOS_WakeUp_Udp {
     </ul>
     <ul>
         <ul>
+            <li>keepAliveCheckTime</li>
+            value in seconds - keepAliveCheck is check read data input from tcp socket and prevented FHEM freeze.
+        </ul>
+    </ul>
+    <ul>
+        <ul>
             <li>wakeOnLanMAC</li>
             Network MAC Address of the LG TV Networkdevice.
         </ul>
@@ -2037,6 +2054,15 @@ sub LGTV_WebOS_WakeUp_Udp {
     <ul>
         <ul>
             <ul>
+                <li>keepAliveCheckTime</li>
+                Wert in Sekunden - keepAliveCheckTime
+ kontrolliert in einer bestimmten Zeit ob noch Daten über die TCP Schnittstelle kommen und verhindert somit FHEM Freezes
+            </ul>
+        </ul>
+    </ul>
+    <ul>
+        <ul>
+            <ul>
                 <li>wakeupCmd</li>
                 Befehl zum Einschalten des LG TV. M&ouml;glich ist ein FHEM Befehl oder Perl in {}.
             </ul>
@@ -2088,7 +2114,7 @@ sub LGTV_WebOS_WakeUp_Udp {
   ],
   "release_status": "stable",
   "license": "GPL_2",
-  "version": "v3.4.1",
+  "version": "v3.4.2",
   "author": [
     "Marko Oldenburg <fhemdevelopment@cooltux.net>"
   ],
