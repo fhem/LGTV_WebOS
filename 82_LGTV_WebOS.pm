@@ -726,7 +726,7 @@ sub LGTV_WebOS_SocketKeepAlive {
         AttrVal( $name, 'keepAliveCheckTime', 0 ) )
     {
         LGTV_WebOS_SocketClosePresenceAbsent( $hash, 'absent' );
-        Log3( $name, 3,
+        Log3( $name, 4,
 "LGTV_WebOS ($name) - KeepAlive It looks like there no Data more response"
         );
     }
