@@ -52,16 +52,16 @@ use FHEM::Meta;
 
 my $missingModul = "";
 
-eval { require MIME::Base64;     1 } or $missingModul .= "MIME::Base64 ";
-eval { require IO::Socket::INET; 1 } or $missingModul .= "IO::Socket::INET ";
+eval { require MIME::Base64;     1 } or $missingModul .= 'MIME::Base64 ';
+eval { require IO::Socket::INET; 1 } or $missingModul .= 'IO::Socket::INET ';
 
 ## no critic (Conditional "use" statement. Use "require" to conditionally include a module (Modules::ProhibitConditionalUseStatements))
-eval { use Digest::SHA qw /sha1_hex/; 1 } or $missingModul .= "Digest::SHA ";
+eval { use Digest::SHA qw /sha1_hex/; 1 } or $missingModul .= 'Digest::SHA ';
 eval { use Encode qw /encode_utf8 decode_utf8/; 1 }
-  or $missingModul .= "Encode ";
+  or $missingModul .= 'Encode ';
 ## use critic
 
-eval { require Blocking; 1 } or $missingModul .= "Blocking ";
+eval { require Blocking; 1 } or $missingModul .= 'Blocking ';
 
 # try to use JSON::MaybeXS wrapper
 #   for chance of better performance + open code
