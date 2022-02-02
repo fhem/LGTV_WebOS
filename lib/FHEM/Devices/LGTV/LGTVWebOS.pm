@@ -383,6 +383,7 @@ sub TimerStatusRequest {
 
     }
     else {
+        ::readingsSingleUpdate( $hash, 'state', 'off', 1 );
 
         Presence($hash)
           if ( ::AttrVal( $name, 'pingPresence', 0 ) == 1 );
