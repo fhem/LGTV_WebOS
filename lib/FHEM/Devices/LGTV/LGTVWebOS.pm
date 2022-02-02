@@ -1808,8 +1808,8 @@ sub WakeUp_Udp {
         return 1;
     }
 
-    my $ip_addr   = inet_aton($host);
-    my $sock_addr = sockaddr_in( $port, $ip_addr );
+    my $ip_addr   = ::inet_aton($host);
+    my $sock_addr = ::sockaddr_in( $port, $ip_addr );
     $mac_addr =~ s/://xg;
     my $packet =
       pack( 'C6H*', 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, $mac_addr x 16 );
