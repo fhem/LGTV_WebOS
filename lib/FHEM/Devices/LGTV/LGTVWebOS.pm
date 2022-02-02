@@ -65,14 +65,14 @@ sub Initialize {
     my $hash = shift;
 
     # Provider
-    $hash->{ReadFn}  = \&FHEM::Devices::LGTV::LGTVWebOS::Read;
-    $hash->{WriteFn} = \&FHEM::Devices::LGTV::LGTVWebOS::Write;
+    $hash->{ReadFn}  = \&Read;
+    $hash->{WriteFn} = \&Write;
 
     # Consumer
-    $hash->{SetFn}   = \&FHEM::Devices::LGTV::LGTVWebOS::Set;
-    $hash->{DefFn}   = \&FHEM::Devices::LGTV::LGTVWebOS::Define;
-    $hash->{UndefFn} = \&FHEM::Devices::LGTV::LGTVWebOS::Undef;
-    $hash->{AttrFn}  = \&FHEM::Devices::LGTV::LGTVWebOS::Attr;
+    $hash->{SetFn}   = \&Set;
+    $hash->{DefFn}   = \&Define;
+    $hash->{UndefFn} = \&Undef;
+    $hash->{AttrFn}  = \&Attr;
     $hash->{AttrList} =
         "disable:1 "
       . "channelGuide:1 "
