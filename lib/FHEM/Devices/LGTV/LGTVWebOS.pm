@@ -263,6 +263,8 @@ sub Define {
 
     $modules{LGTV_WebOS}{defptr}{ $hash->{HOST} } = $hash;
 
+    readingsSingleUpdate( $hash, 'state', 'Initialized', 1 );
+
     if ($init_done) {
         TimerStatusRequest($hash);
     }
