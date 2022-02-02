@@ -330,7 +330,7 @@ use FHEM::Meta;
   ],
   "release_status": "stable",
   "license": "GPL_2",
-  "version": "v3.4.2",
+  "version": "v3.6.0",
   "author": [
     "Marko Oldenburg <fhemdevelopment@cooltux.net>"
   ],

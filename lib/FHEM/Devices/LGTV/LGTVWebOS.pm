@@ -34,6 +34,13 @@ use strict;
 use warnings;
 use experimental qw /switch/;
 
+## try / catch
+use Try::Tiny;
+
+# use Carp;
+use autodie qw /:io/;
+##
+
 use GPUtils qw(GP_Import);
 
 use FHEM::Meta;
@@ -982,12 +989,23 @@ sub ResponseProcessing {
             return;
         }
 
-        my $decode_json = eval { decode_json( encode_utf8($json) ) };
-        if ($@) {
-            Log3( $name, 3,
-                "LGTV_WebOS ($name) - JSON error while request: $@" );
-            return;
+        my $decode_json;
+        try {
+            $decode_json = decode_json( encode_utf8($json) );
         }
+        catch {
+            if ( $_->isa('autodie::exception') && $_->matches(':io') ) {
+                Log3( $name, 3,
+                    "LGTV_WebOS ($name) autodie - JSON error while request: $_"
+                );
+                return;
+            }
+            else {
+                Log3( $name, 3,
+                    "LGTV_WebOS ($name) - JSON error while request: $_" );
+                return;
+            }
+        };    # Note semicolon.
 
         WriteReadings( $hash, $decode_json );
 
@@ -1418,11 +1436,22 @@ sub CreateSendCommand {
 
 #::Log3( $name, 5, "LGTV_WebOS ($name) - Payload Message: $command->{payload}{message}" );
 
-    my $cmd = eval { encode_json($command) };
-    if ($@) {
-        Log3( $name, 3, "LGTV_WebOS ($name) - can't $cmd encode to json: $@" );
-        return;
+    my $cmd;
+    try {
+        $cmd = encode_json($command);
     }
+    catch {
+        if ( $_->isa('autodie::exception') && $_->matches(':io') ) {
+            Log3( $name, 3,
+                "LGTV_WebOS ($name) - can't $cmd encode to json: $_" );
+            return;
+        }
+        else {
+            Log3( $name, 3,
+                "LGTV_WebOS ($name) - can't $cmd encode to json: $_" );
+            return;
+        }
+    };
 
     ::Log3( $name, 5, "LGTV_WebOS ($name) - Sending command: $cmd" );
 
