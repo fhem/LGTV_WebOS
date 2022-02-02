@@ -74,6 +74,8 @@ sub Initialize {
 
 1;
 
+__END__
+
 =pod
 =item device
 =item summary       Controls LG SmartTVs run with WebOS Operating System
@@ -397,5 +399,3 @@ sub Initialize {
 =end :application/json;q=META.json
 
 =cut
-
-__END__
