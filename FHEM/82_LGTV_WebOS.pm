@@ -37,6 +37,41 @@ require FHEM::Devices::LGTV::LGTVWebOS;
 
 use FHEM::Meta;
 
+use GPUtils qw(GP_Import);
+
+#-- Run before package compilation
+BEGIN {
+    #-- Export to main context with different name
+    GP_Import(qw( readingFnAttributes));
+}
+
+sub ::LGTV_WebOS_Initialize { goto &Initialize }
+
+sub Initialize {
+    my $hash = shift;
+
+    # Provider
+    $hash->{ReadFn}  = \&FHEM::Devices::LGTV::LGTVWebOS::Read;
+    $hash->{WriteFn} = \&FHEM::Devices::LGTV::LGTVWebOS::Write;
+
+    # Consumer
+    $hash->{SetFn}   = \&FHEM::Devices::LGTV::LGTVWebOS::Set;
+    $hash->{DefFn}   = \&FHEM::Devices::LGTV::LGTVWebOS::Define;
+    $hash->{UndefFn} = \&FHEM::Devices::LGTV::LGTVWebOS::Undef;
+    $hash->{AttrFn}  = \&FHEM::Devices::LGTV::LGTVWebOS::Attr;
+    $hash->{AttrList} =
+        "disable:1 "
+      . "channelGuide:1 "
+      . "pingPresence:1 "
+      . "wakeOnLanMAC "
+      . "wakeOnLanBroadcast "
+      . "wakeupCmd "
+      . "keepAliveCheckTime "
+      . $readingFnAttributes;
+
+    return FHEM::Meta::InitMod( __FILE__, $hash );
+}
+
 1;
 
 =pod

@@ -50,40 +50,13 @@ use GPUtils qw(GP_Import);
 BEGIN {
     #-- Export to main context with different name
     GP_Import(
-        qw( readingFnAttributes
+        qw(
           modules
           init_done
           selectlist
           defs
           )
     );
-}
-
-sub ::LGTV_WebOS_Initialize { goto &Initialize }
-
-sub Initialize {
-    my $hash = shift;
-
-    # Provider
-    $hash->{ReadFn}  = \&Read;
-    $hash->{WriteFn} = \&Write;
-
-    # Consumer
-    $hash->{SetFn}   = \&Set;
-    $hash->{DefFn}   = \&Define;
-    $hash->{UndefFn} = \&Undef;
-    $hash->{AttrFn}  = \&Attr;
-    $hash->{AttrList} =
-        "disable:1 "
-      . "channelGuide:1 "
-      . "pingPresence:1 "
-      . "wakeOnLanMAC "
-      . "wakeOnLanBroadcast "
-      . "wakeupCmd "
-      . "keepAliveCheckTime "
-      . $readingFnAttributes;
-
-    return FHEM::Meta::InitMod( __FILE__, $hash );
 }
 
 my $missingModul = "";
@@ -390,7 +363,8 @@ sub TimerStatusRequest {
 
     }
     else {
-        ::readingsSingleUpdate( $hash, 'state', 'off', 1 );
+        ::readingsSingleUpdate( $hash, 'state', 'off', 1 )
+          if ( ::ReadingsVal( $name, 'state', 'off' ) ne 'off' );
 
         Presence($hash)
           if ( ::AttrVal( $name, 'pingPresence', 0 ) == 1 );
