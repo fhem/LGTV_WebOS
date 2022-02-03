@@ -41,8 +41,6 @@ use Try::Tiny;
 use autodie qw /:io/;
 ##
 
-use GPUtils qw(GP_Import);
-
 use FHEM::Meta;
 use GPUtils qw(GP_Import);
 
