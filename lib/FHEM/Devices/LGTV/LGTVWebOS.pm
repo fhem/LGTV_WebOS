@@ -1040,7 +1040,7 @@ sub WriteProgramlistReadings {
     for my $programList ( @{ $decode_json->{payload}{programList} } ) {
 
         if (
-            str2time( FormartStartEndTime( $programList->{localEndTime} ) ) >
+            ::str2time( FormartStartEndTime( $programList->{localEndTime} ) ) >
             time() )
         {
             if ( $count < 1 ) {
