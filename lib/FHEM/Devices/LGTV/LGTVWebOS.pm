@@ -25,7 +25,7 @@
 #  GNU General Public License for more details.
 #
 #
-# $Id:
+# $Id$
 #
 ###############################################################################
 package FHEM::Devices::LGTV::LGTVWebOS;

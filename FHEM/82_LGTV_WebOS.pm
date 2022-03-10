@@ -25,7 +25,7 @@
 #  GNU General Public License for more details.
 #
 #
-# $Id:
+# $Id$
 #
 ###############################################################################
 package FHEM::LGTV_WebOS;
@@ -244,7 +244,7 @@ __END__
                     <li><strong>clearInputList&nbsp;</strong> -&nbsp;&nbsp; L&ouml;scht die Liste der Ger&auml;teeing&auml;nge</li>
                     <li><strong>input&nbsp;</strong> - W&auml;hlt den Ger&auml;teeingang aus (Abh&auml;ngig von Typ und angeschossenen Ger&auml;ten) <br />Beispiele: extInput_AV-1, extInput_HDMI-1, extInput_HDMI-2, extInput_HDMI-3)</li>
                 </ul>
-            </ul
+            </ul>
         </ul>
     </ul>
     <p><strong>Get-Kommandos</strong> <code>get &lt;Name&gt; &lt;Readingname&gt;</code><br /><br /></p>
@@ -348,6 +348,7 @@ __END__
         </ul>
     </ul>
 </ul>
+
 =end html_DE
 
 =for :application/json;q=META.json 82_LGTV_WebOS.pm
