@@ -1288,7 +1288,8 @@ sub WriteReadings {
           if ( exists( $decode_json->{payload}{'channelName'} ) );
         ::readingsBulkUpdateIfChanged( $hash, 'channelMedia',
             $decode_json->{payload}{'channelTypeName'} )
-          if ( exists( $decode_json->{payload}{'channelTypeName'} ) );
+          if ( exists( $decode_json->{payload}{'channelTypeName'} )
+            && $decode_json->{payload}{'channelTypeName'} );
 
     }
     else {
