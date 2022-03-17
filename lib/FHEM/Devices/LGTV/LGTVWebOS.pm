@@ -736,7 +736,8 @@ sub Read {
 
     $hash->{helper}->{lastResponse} =
       int( ::gettimeofday() );    # Check Socket KeepAlive
-    $len = sysread( $hash->{CD}, $buf, 10240 );
+    $len = sysread( $hash->{CD}, $buf, 10240 )
+      if exists( $hash->{CD} );
 
     if ( !defined($len) || !$len ) {
 
