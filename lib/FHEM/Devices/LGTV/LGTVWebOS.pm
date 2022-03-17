@@ -994,6 +994,8 @@ sub WriteServiceReadings {
     my $hash        = shift;
     my $decode_json = shift;
 
+    ::readingsBeginUpdate($hash);
+
     for my $services ( @{ $decode_json->{payload}{services} } ) {
         ::readingsBulkUpdateIfChanged(
             $hash,
@@ -1002,12 +1004,16 @@ sub WriteServiceReadings {
         );
     }
 
+    ::readingsEndUpdate( $hash, 1 );
+
     return;
 }
 
 sub WriteDeviceReadings {
     my $hash        = shift;
     my $decode_json = shift;
+
+    ::readingsBeginUpdate($hash);
 
     for my $devices ( @{ $decode_json->{payload}{devices} } ) {
 
@@ -1029,6 +1035,8 @@ sub WriteDeviceReadings {
         );
     }
 
+    ::readingsEndUpdate( $hash, 1 );
+
     return;
 }
 
@@ -1038,6 +1046,9 @@ sub WriteProgramlistReadings {
 
     require Date::Parse;
     my $count = 0;
+
+    ::readingsBeginUpdate($hash);
+
     for my $programList ( @{ $decode_json->{payload}{programList} } ) {
 
         if (
@@ -1069,12 +1080,16 @@ sub WriteProgramlistReadings {
         }
     }
 
+    ::readingsEndUpdate( $hash, 1 );
+
     return;
 }
 
 sub WriteMuteReadings {
     my $hash        = shift;
     my $decode_json = shift;
+
+    ::readingsBeginUpdate($hash);
 
     if (
         exists( $decode_json->{payload}{'mute'} )
@@ -1115,12 +1130,16 @@ sub WriteMuteReadings {
         ::readingsBulkUpdateIfChanged( $hash, 'mute', 'off' );
     }
 
+    ::readingsEndUpdate( $hash, 1 );
+
     return;
 }
 
 sub Write3dReadings {
     my $hash        = shift;
     my $decode_json = shift;
+
+    ::readingsBeginUpdate($hash);
 
     if (   $decode_json->{payload}{status3D}{status} eq 'false'
         || $decode_json->{payload}{status3D}{status} == 0 )
@@ -1139,12 +1158,16 @@ sub Write3dReadings {
     ::readingsBulkUpdateIfChanged( $hash, '3DMode',
         $decode_json->{payload}{status3D}{pattern} );
 
+    ::readingsEndUpdate( $hash, 1 );
+
     return;
 }
 
 sub WriteAppIdReadings {
     my $hash        = shift;
     my $decode_json = shift;
+
+    ::readingsBeginUpdate($hash);
 
     if (
         (
@@ -1173,6 +1196,8 @@ sub WriteAppIdReadings {
         ::readingsBulkUpdateIfChanged( $hash, 'input', '-' );
     }
 
+    ::readingsEndUpdate( $hash, 1 );
+
     return;
 }
 
@@ -1181,6 +1206,8 @@ sub WriteTypeReadings {
     my $decode_json = shift;
 
     my $response;
+
+    ::readingsBeginUpdate($hash);
 
     if ( $decode_json->{type} eq 'registered'
         && exists( $decode_json->{payload}{'client-key'} ) )
@@ -1225,6 +1252,8 @@ sub WriteTypeReadings {
           if ( $hash->{helper}{device}{runsetcmd} > 0 );
     }
 
+    ::readingsEndUpdate( $hash, 1 );
+
     return $response;
 }
 
@@ -1235,8 +1264,6 @@ sub WriteReadings {
     my $response;
 
     ::Log3( $name, 4, "LGTV_WebOS ($name) - Beginn Readings writing" );
-
-    ::readingsBeginUpdate($hash);
 
     if ( ref( $decode_json->{payload}{services} ) eq "ARRAY"
         && scalar( @{ $decode_json->{payload}{services} } ) > 0 )
@@ -1265,6 +1292,8 @@ sub WriteReadings {
     elsif ( exists( $decode_json->{payload}{appId} ) ) {
         WriteAppIdReadings( $hash, $decode_json );
     }
+
+    ::readingsBeginUpdate($hash);
 
     if ( exists( $decode_json->{type} ) ) {
         $response = WriteTypeReadings( $hash, $decode_json );
