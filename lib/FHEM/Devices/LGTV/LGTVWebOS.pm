@@ -710,11 +710,13 @@ sub Write {
     }
     catch {
         if ( $_->isa('autodie::exception') && $_->matches(':io') ) {
-            Log3( $name, 2, "LGTV_WebOS ($name) - can't write to socket: $_" );
+            ::Log3( $name, 2,
+                "LGTV_WebOS ($name) - can't write to socket: $_" );
             return;
         }
         else {
-            Log3( $name, 2, "LGTV_WebOS ($name) - can't write too socket: $_" );
+            ::Log3( $name, 2,
+                "LGTV_WebOS ($name) - can't write too socket: $_" );
             return;
         }
     };
@@ -756,11 +758,13 @@ sub Read {
     }
     catch {
         if ( $_->isa('autodie::exception') && $_->matches(':io') ) {
-            Log3( $name, 2, "LGTV_WebOS ($name) - can't read from socket: $_" );
+            ::Log3( $name, 2,
+                "LGTV_WebOS ($name) - can't read from socket: $_" );
             return;
         }
         else {
-            Log3( $name, 2, "LGTV_WebOS ($name) - can't read from socket: $_" );
+            ::Log3( $name, 2,
+                "LGTV_WebOS ($name) - can't read from socket: $_" );
             return;
         }
     };
