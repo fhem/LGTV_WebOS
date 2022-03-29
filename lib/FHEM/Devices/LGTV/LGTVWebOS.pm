@@ -704,7 +704,21 @@ sub Write {
       unless ( $hash->{CD} );
 
     ::Log3( $name, 4, "LGTV_WebOS ($name) - $string" );
-    syswrite( $hash->{CD}, $string );
+
+    try {
+        syswrite( $hash->{CD}, $string );
+    }
+    catch {
+        if ( $_->isa('autodie::exception') && $_->matches(':io') ) {
+            Log3( $name, 2, "LGTV_WebOS ($name) - can't write to socket: $_" );
+            return;
+        }
+        else {
+            Log3( $name, 2, "LGTV_WebOS ($name) - can't write too socket: $_" );
+            return;
+        }
+    };
+
     return;
 }
 
