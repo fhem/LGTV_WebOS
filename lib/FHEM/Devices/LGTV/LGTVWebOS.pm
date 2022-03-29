@@ -711,7 +711,8 @@ sub Write {
     catch {
         if ( $_->isa('autodie::exception') && $_->matches(':io') ) {
             ::Log3( $name, 2,
-                "LGTV_WebOS ($name) - can't write to socket: $_" );
+"LGTV_WebOS ($name) - can't write to socket, autodie exception: $_"
+            );
             return;
         }
         else {
@@ -759,7 +760,8 @@ sub Read {
     catch {
         if ( $_->isa('autodie::exception') && $_->matches(':io') ) {
             ::Log3( $name, 2,
-                "LGTV_WebOS ($name) - can't read from socket: $_" );
+"LGTV_WebOS ($name) - can't read from socket, autodie exception: $_"
+            );
             return;
         }
         else {
