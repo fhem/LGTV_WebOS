@@ -717,7 +717,7 @@ sub Write {
         }
         else {
             ::Log3( $name, 2,
-                "LGTV_WebOS ($name) - can't write too socket: $_" );
+                "LGTV_WebOS ($name) - can't write to socket: $_" );
             return;
         }
     };
