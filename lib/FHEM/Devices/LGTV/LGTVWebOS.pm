@@ -643,14 +643,25 @@ sub Open {
     my $hash    = shift;
     my $name    = $hash->{NAME};
     my $host    = $hash->{HOST};
-    my $port    = 3000;
     my $timeout = 0.1;
 
     ::Log3( $name, 4, "LGTV_WebOS ($name) - Baue Socket Verbindung auf" );
 
-    my $socket = IO::Socket::INET->new(
+ #  create a connecting socket
+ #  SSL_startHandshake is dependent on the protocol: this lets us use one socket
+ #  to work with either SSL or non-SSL sockets.
+    my $socket = IO::Socket::SSL->new(
+        PeerHost           => $host,
+        PeerPort           => 3001,
+        Proto              => 'tcp',
+        SSL_startHandshake => 1,                 #( $proto eq 'wss' ? 1 : 0 ),
+        SSL_verify_mode    => SSL_VERIFY_NONE,
+        KeepAlive          => 1,
+        Timeout            => $timeout
+      )
+      || IO::Socket::INET->new(
         PeerHost  => $host,
-        PeerPort  => $port,
+        PeerPort  => 3000,
         Proto     => 'tcp',
         KeepAlive => 1,
         Timeout   => $timeout
