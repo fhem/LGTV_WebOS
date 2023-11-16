@@ -666,8 +666,9 @@ sub Open {
         KeepAlive => 1,
         Timeout   => $timeout
       )
-      or return ::Log3( $name, 4,
-        "LGTV_WebOS ($name) Couldn't connect to $host:$port" );    # open Socket
+      or
+      return ::Log3( $name, 4, "LGTV_WebOS ($name) Couldn't connect to $host" )
+      ;    # open Socket
 
     $hash->{FD} = $socket->fileno();
     $hash->{CD} = $socket;             # sysread / close won't work on fileno
