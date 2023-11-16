@@ -654,8 +654,8 @@ sub Open {
         PeerHost           => $host,
         PeerPort           => 3001,
         Proto              => 'tcp',
-        SSL_startHandshake => 1,                 #( $proto eq 'wss' ? 1 : 0 ),
-        SSL_verify_mode    => SSL_VERIFY_NONE,
+        SSL_startHandshake => 1,                   #( $proto eq 'wss' ? 1 : 0 ),
+        SSL_verify_mode    => 'SSL_VERIFY_NONE',
         KeepAlive          => 1,
         Timeout            => $timeout
       )
