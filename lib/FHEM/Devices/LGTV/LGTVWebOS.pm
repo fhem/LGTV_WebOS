@@ -643,6 +643,7 @@ sub Open {
     my $hash    = shift;
     my $name    = $hash->{NAME};
     my $host    = $hash->{HOST};
+    my $port    = 3000;
     my $timeout = 0.1;
 
     ::Log3( $name, 4, "LGTV_WebOS ($name) - Baue Socket Verbindung auf" );
@@ -654,20 +655,22 @@ sub Open {
         PeerHost           => $host,
         PeerPort           => 3001,
         Proto              => 'tcp',
-        SSL_startHandshake => 1,                   #( $proto eq 'wss' ? 1 : 0 ),
-        SSL_verify_mode    => 'SSL_VERIFY_NONE',
-        KeepAlive          => 1,
-        Timeout            => $timeout
+        SSL_startHandshake => 1,                 #( $proto eq 'wss' ? 1 : 0 ),
+        SSL_verify_mode    => SSL_VERIFY_NONE,
+
+        # Blocking                   => 1
+        KeepAlive => 1,
+        Timeout   => $timeout
       )
       || IO::Socket::INET->new(
         PeerHost  => $host,
-        PeerPort  => 3000,
+        PeerPort  => $port,
         Proto     => 'tcp',
         KeepAlive => 1,
         Timeout   => $timeout
       )
-      or
-      return ::Log3( $name, 4, "LGTV_WebOS ($name) Couldn't connect to $host" )
+      or return ::Log3( $name, 4,
+        "LGTV_WebOS ($name) Couldn't connect to $host:$port/3001" )
       ;    # open Socket
 
     $hash->{FD} = $socket->fileno();
