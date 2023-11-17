@@ -61,6 +61,7 @@ my $missingModul = "";
 
 eval { require MIME::Base64;     1 } or $missingModul .= 'MIME::Base64 ';
 eval { require IO::Socket::INET; 1 } or $missingModul .= 'IO::Socket::INET ';
+eval { use IO::Socket::SSL;      1 } or $missingModul .= 'IO::Socket::SSL ';
 
 ## no critic (Conditional "use" statement. Use "require" to conditionally include a module (Modules::ProhibitConditionalUseStatements))
 eval { use Digest::SHA qw /sha1_hex/; 1 } or $missingModul .= 'Digest::SHA ';
