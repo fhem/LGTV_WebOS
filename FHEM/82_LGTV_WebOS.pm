@@ -2,7 +2,7 @@
 #
 # Developed with VSCodium and richterger perl plugin.
 #
-#  (c) 2017-2025 Copyright: Marko Oldenburg (fhemdevelopment at cooltux dot net)
+#  (c) 2017-2026 Copyright: Marko Oldenburg (fhemdevelopment at cooltux dot net)
 #  All rights reserved
 #
 #   Special thanks goes to comitters:
@@ -368,8 +368,8 @@ __END__
     "LG"
   ],
   "release_status": "stable",
-  "license": "GPL_2",
-  "version": "v3.7.1",
+  "license": "GPL_3",
+  "version": "v3.7.2",
   "author": [
     "Marko Oldenburg <fhemdevelopment@cooltux.net>"
   ],
@@ -377,7 +377,7 @@ __END__
     "CoolTux"
   ],
   "x_fhem_maintainer_github": [
-    "LeonGaultier"
+    "CoolTuxNet"
   ],
   "prereqs": {
     "runtime": {
